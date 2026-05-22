@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KI-Angebotsgenerator — Fliesen Metzger GmbH</title>
+<style>
+  :root {
+    --dark: #1a1f2e;
+    --mid: #2d3548;
+    --accent: #c8a84b;
+    --accent-light: #e8c96a;
+    --green: #2d7a4f;
+    --red: #c0392b;
+    --text: #1a1f2e;
+    --muted: #64748b;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --radius: 12px;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--dark);
+    color: #fff;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .logo-text { line-height: 1.2; }
+  .logo-title { font-size: 1rem; font-weight: 700; letter-spacing: 0.3px; }
+  .logo-sub { font-size: 0.72rem; color: #94a3b8; }
+
+  .header-badge {
+    background: rgba(200,168,75,0.15);
+    border: 1px solid rgba(200,168,75,0.3);
+    color: var(--accent-light);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  main {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .hero {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero h1 {
+    font-size: 1.9rem;
+    font-weight: 800;
+    color: var(--dark);
+    margin-bottom: 0.6rem;
+    letter-spacing: -0.3px;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 1rem;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 680px) {
+    .grid { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 1.4rem; }
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+  }
+
+  .card-full {
+    grid-column: 1 / -1;
+  }
+
+  .card-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 180px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.9rem 1rem;
+    font-family: inherit;
+    font-size: 0.92rem;
+    color: var(--text);
+    resize: vertical;
+    line-height: 1.6;
+    transition: border-color 0.2s;
+    background: #fafbfc;
+  }
+
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+
+  textarea::placeholder { color: #b0bec5; }
+
+  .btn-row {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.65rem 1.2rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--dark);
+    flex: 1;
+    justify-content: center;
+    font-size: 0.95rem;
+    padding: 0.8rem 1.5rem;
+    box-shadow: 0 2px 8px rgba(200,168,75,0.3);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent-light);
+    box-shadow: 0 4px 16px rgba(200,168,75,0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-secondary {
+    background: var(--bg);
+    color: var(--muted);
+    border: 1.5px solid var(--border);
+  }
+
+  .btn-secondary:hover { background: #e8edf4; color: var(--text); }
+
+  .btn-copy {
+    background: var(--green);
+    color: #fff;
+    margin-left: auto;
+  }
+
+  .btn-copy:hover { background: #256040; }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(26,31,46,0.3);
+    border-top-color: var(--dark);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading .spinner { display: block; }
+  .loading .btn-icon { display: none; }
+
+  .output-area {
+    display: none;
+  }
+
+  .output-area.visible { display: block; }
+
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .output-meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border: 1px solid #1e293b;
+  }
+
+  .status-bar {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  .status-bar.visible { display: flex; }
+  .status-bar.loading { background: #fef9e7; border: 1px solid #f5d87a; color: #92670a; }
+  .status-bar.error { background: #fdf2f2; border: 1px solid #f5c6c6; color: var(--red); }
+  .status-bar.success { background: #f0faf5; border: 1px solid #a7d9bb; color: #1a6b3c; }
+
+  .info-box {
+    background: linear-gradient(135deg, #1a1f2e, #2d3548);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    color: #94a3b8;
+    font-size: 0.83rem;
+    line-height: 1.7;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .info-box strong { color: var(--accent-light); }
+
+  .info-box .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 0.4rem 0;
+  }
+
+  .step-num {
+    background: rgba(200,168,75,0.2);
+    color: var(--accent);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .copy-success { color: #2d7a4f !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🪨</div>
+    <div class="logo-text">
+      <div class="logo-title">Fliesen Metzger GmbH</div>
+      <div class="logo-sub">KI-Angebotsgenerator</div>
+    </div>
+  </div>
+  <span class="header-badge">Beta · claude-sonnet-4-6</span>
+</header>
+
+<main>
+  <div class="hero">
+    <h1>Angebot in Sekunden — aus jeder Kundenanfrage</h1>
+    <p>Kundenanfrage eingeben oder einfügen. Die KI erstellt ein vollständiges, kalkuliertes Angebot im Betriebsformat.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card card-full">
+      <div class="card-label">✉️ Kundenanfrage</div>
+      <textarea id="anfrage" placeholder="Kundenanfrage hier einfügen — z.B. eine E-Mail, WhatsApp-Nachricht oder mündliche Notiz:
+
+Guten Tag, ich möchte mein Badezimmer neu fliesen lassen. Der Boden ist ca. 8 m², die Wände ca. 18 m². Wir wünschen uns anthrazitfarbene Fliesen, modern und pflegeleicht. Der alte Belag soll entfernt werden. Wann könnten Sie beginnen?"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="ladeBeispiel()">📋 Beispielanfrage laden</button>
+        <button class="btn btn-secondary" onclick="leeren()">✕ Leeren</button>
+        <button class="btn btn-primary" id="genBtn" onclick="generiereAngebot()">
+          <span class="btn-icon">⚡</span>
+          <div class="spinner" id="spinner"></div>
+          <span id="btnText">Angebot generieren</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="status-bar" id="statusBar">
+    <span id="statusIcon"></span>
+    <span id="statusText"></span>
+  </div>
+
+  <div class="output-area" id="outputArea">
+    <div class="card">
+      <div class="output-header">
+        <div class="card-label">📄 Generiertes Angebot</div>
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <span class="output-meta" id="outputMeta"></span>
+          <button class="btn btn-copy" id="copyBtn" onclick="kopieren()">📋 Kopieren</button>
+        </div>
+      </div>
+      <pre id="ausgabe"></pre>
+    </div>
+  </div>
+
+  <div class="grid" style="margin-top:1.5rem;">
+    <div class="info-box card-full" style="grid-column:1/-1">
+      <strong>So funktioniert der Generator</strong>
+      <div class="step"><div class="step-num">1</div><div>Kundenanfrage eingeben — E-Mail, Notiz, WhatsApp-Text oder freie Beschreibung.</div></div>
+      <div class="step"><div class="step-num">2</div><div>Auf <strong>Angebot generieren</strong> klicken. Die KI analysiert die Anfrage anhand von 30 Musterangeboten des Betriebs.</div></div>
+      <div class="step"><div class="step-num">3</div><div>Fertig kalkuliertes Angebot erscheint in 10–20 Sekunden — mit Positionen, Preisen, MwSt. und Zahlungsbedingungen im Betriebsformat.</div></div>
+      <div class="step"><div class="step-num">4</div><div>Kopieren und in Word, Outlook oder die eigene Branchensoftware übertragen.</div></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const BEISPIELANFRAGE = `Betreff: Anfrage Badezimmer-Sanierung
+
+Guten Tag,
+
+mein Name ist Peter Hoffmann und ich wohne in Falkensee, Lindenstraße 44.
+Wir möchten unser Badezimmer komplett sanieren lassen.
+
+Das Bad ist ca. 9 m² groß. Es gibt eine begehbare Dusche (ca. 2 m²)
+und einen separaten Bodenbereich (ca. 7 m²). Die Wandfläche beträgt
+insgesamt ca. 20 m².
+
+Wir wünschen uns:
+- Modernes, schlichtes Design – am liebsten in Anthrazit oder Hellgrau
+- Für die Dusche unbedingt rutschfeste Fliesen
+- Hochwertige Ausführung, gerne auch Feinsteinzeug
+- Der alte Belag soll komplett entfernt werden
+
+Könnten Sie uns bitte ein Angebot erstellen?
+Wann wäre eine Besichtigung möglich?
+
+Mit freundlichen Grüßen
+Peter Hoffmann
+Tel: 0173 / 123 45 67`;
+
+function ladeBeispiel() {
+  document.getElementById('anfrage').value = BEISPIELANFRAGE;
+}
+
+function leeren() {
+  document.getElementById('anfrage').value = '';
+  document.getElementById('outputArea').classList.remove('visible');
+  setStatus('');
+}
+
+function setStatus(typ, text) {
+  const bar = document.getElementById('statusBar');
+  const icon = document.getElementById('statusIcon');
+  const msg = document.getElementById('statusText');
+  if (!typ) { bar.className = 'status-bar'; return; }
+  const icons = { loading: '⏳', error: '❌', success: '✅' };
+  icon.textContent = icons[typ] || '';
+  msg.textContent = text;
+  bar.className = `status-bar visible ${typ}`;
+}
+
+async function generiereAngebot() {
+  const anfrage = document.getElementById('anfrage').value.trim();
+  if (!anfrage) {
+    setStatus('error', 'Bitte zuerst eine Kundenanfrage eingeben.');
+    return;
+  }
+
+  const btn = document.getElementById('genBtn');
+  const btnText = document.getElementById('btnText');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  btnText.textContent = 'Angebot wird erstellt …';
+  document.getElementById('outputArea').classList.remove('visible');
+  setStatus('loading', 'Claude analysiert die Anfrage und erstellt das Angebot — bitte ca. 15–20 Sekunden warten …');
+
+  const start = Date.now();
+
+  try {
+    const res = await fetch('/api/angebot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anfrage })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      setStatus('error', data.error || `Fehler ${res.status}`);
+      return;
+    }
+
+    const dauer = ((Date.now() - start) / 1000).toFixed(1);
+    document.getElementById('ausgabe').textContent = data.angebot;
+    document.getElementById('outputMeta').textContent = `generiert in ${dauer}s`;
+    document.getElementById('outputArea').classList.add('visible');
+    setStatus('success', `Angebot erfolgreich generiert (${dauer} Sekunden). Prüfen, kopieren, fertig.`);
+    document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    setStatus('error', `Verbindungsfehler: ${err.message}`);
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    btnText.textContent = 'Angebot generieren';
+  }
+}
+
+async function kopieren() {
+  const text = document.getElementById('ausgabe').textContent;
+  const btn = document.getElementById('copyBtn');
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = '✅ Kopiert!';
+    btn.classList.add('copy-success');
+    setTimeout(() => { btn.textContent = '📋 Kopieren'; btn.classList.remove('copy-success'); }, 2000);
+  } catch {
+    btn.textContent = '❌ Fehler';
+    setTimeout(() => { btn.textContent = '📋 Kopieren'; }, 2000);
+  }
+}
+
+document.getElementById('anfrage').addEventListener('keydown', e => {
+  if (e.ctrlKey && e.key === 'Enter') generiereAngebot();
+});
+</script>
+</body>
+</html>
