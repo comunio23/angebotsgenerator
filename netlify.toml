@@ -1,6 +1,11 @@
 [build]
   functions = "netlify/functions"
 
+[[redirects]]
+  from = "/api/angebot"
+  to = "/.netlify/functions/angebot"
+  status = 200
+
 [[headers]]
   for = "/api/*"
   [headers.values]
