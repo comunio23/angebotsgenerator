@@ -12,6 +12,7 @@
     --accent-light: #e8c96a;
     --green: #2d7a4f;
     --red: #c0392b;
+    --blue: #2563eb;
     --text: #1a1f2e;
     --muted: #64748b;
     --bg: #f4f6f9;
@@ -45,309 +46,208 @@
     box-shadow: 0 2px 12px rgba(0,0,0,0.3);
   }
 
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
+  .logo { display: flex; align-items: center; gap: 12px; }
   .logo-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--accent);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.2rem;
+    width: 36px; height: 36px; background: var(--accent);
+    border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-size: 1.2rem;
   }
-
   .logo-text { line-height: 1.2; }
   .logo-title { font-size: 1rem; font-weight: 700; letter-spacing: 0.3px; }
   .logo-sub { font-size: 0.72rem; color: #94a3b8; }
-
   .header-badge {
-    background: rgba(200,168,75,0.15);
-    border: 1px solid rgba(200,168,75,0.3);
-    color: var(--accent-light);
-    font-size: 0.72rem;
-    font-weight: 600;
-    padding: 4px 10px;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
+    background: rgba(200,168,75,0.15); border: 1px solid rgba(200,168,75,0.3);
+    color: var(--accent-light); font-size: 0.72rem; font-weight: 600;
+    padding: 4px 10px; border-radius: 20px; letter-spacing: 0.5px;
   }
 
-  main {
-    max-width: 920px;
-    margin: 0 auto;
-    padding: 2.5rem 1.5rem 4rem;
+  /* Demo-Banner */
+  .demo-banner {
+    background: #fef3cd; color: #7a5c00; border-bottom: 1px solid #f0d98a;
+    font-size: 0.82rem; text-align: center; padding: 0.5rem 1rem; font-weight: 500;
   }
 
-  .hero {
-    text-align: center;
-    margin-bottom: 2.5rem;
+  /* Tab-Navigation */
+  .tabs {
+    background: var(--card); border-bottom: 1px solid var(--border);
+    position: sticky; top: 64px; z-index: 90;
+    display: flex; gap: 0; overflow-x: auto; padding: 0 1rem;
   }
+  .tab-btn {
+    background: none; border: none; cursor: pointer; white-space: nowrap;
+    padding: 0.95rem 1.2rem; font-size: 0.92rem; font-weight: 600; color: var(--muted);
+    border-bottom: 3px solid transparent; font-family: inherit; display: flex; align-items: center; gap: 6px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--dark); border-bottom-color: var(--accent); }
 
-  .hero h1 {
-    font-size: 1.9rem;
-    font-weight: 800;
-    color: var(--dark);
-    margin-bottom: 0.6rem;
-    letter-spacing: -0.3px;
-  }
+  main { max-width: 920px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .view { display: none; }
+  .view.active { display: block; }
 
-  .hero p {
-    color: var(--muted);
-    font-size: 1rem;
-    max-width: 520px;
-    margin: 0 auto;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  @media (max-width: 680px) {
-    .grid { grid-template-columns: 1fr; }
-    .hero h1 { font-size: 1.4rem; }
-  }
+  .hero { text-align: center; margin-bottom: 2rem; }
+  .hero h1 { font-size: 1.9rem; font-weight: 800; color: var(--dark); margin-bottom: 0.6rem; letter-spacing: -0.3px; }
+  .hero p { color: var(--muted); font-size: 1rem; max-width: 560px; margin: 0 auto; }
+  @media (max-width: 680px) { .hero h1 { font-size: 1.4rem; } }
 
   .card {
-    background: var(--card);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 1.5rem;
-    border: 1px solid var(--border);
+    background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1.5rem;
   }
-
-  .card-full {
-    grid-column: 1 / -1;
-  }
-
   .card-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.8px;
-    color: var(--muted);
-    margin-bottom: 0.75rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+    color: var(--muted); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 6px;
   }
 
-  textarea {
-    width: 100%;
-    min-height: 180px;
-    border: 1.5px solid var(--border);
-    border-radius: 8px;
-    padding: 0.9rem 1rem;
-    font-family: inherit;
-    font-size: 0.92rem;
-    color: var(--text);
-    resize: vertical;
-    line-height: 1.6;
-    transition: border-color 0.2s;
-    background: #fafbfc;
+  textarea, input[type=text], input[type=number] {
+    width: 100%; border: 1.5px solid var(--border); border-radius: 8px;
+    padding: 0.7rem 0.9rem; font-family: inherit; font-size: 0.92rem; color: var(--text);
+    background: #fafbfc; transition: border-color 0.2s;
   }
-
-  textarea:focus {
-    outline: none;
-    border-color: var(--accent);
-    background: #fff;
-  }
-
+  textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
+  textarea:focus, input:focus { outline: none; border-color: var(--accent); background: #fff; }
   textarea::placeholder { color: #b0bec5; }
+  label.fld { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.3rem; }
+  .fld-group { margin-bottom: 1rem; }
 
-  .btn-row {
-    display: flex;
-    gap: 0.75rem;
-    margin-top: 0.75rem;
-    flex-wrap: wrap;
+  /* Eingabequellen-Leiste */
+  .source-bar { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.75rem; align-items: center; }
+  .dropzone {
+    flex: 1; min-width: 200px; border: 2px dashed var(--border); border-radius: 8px;
+    padding: 0.7rem 1rem; text-align: center; color: var(--muted); font-size: 0.83rem;
+    cursor: pointer; transition: all 0.15s; background: #fafbfc;
   }
+  .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: #fffdf5; color: var(--text); }
 
+  .btn-row { display: flex; gap: 0.75rem; margin-top: 0.75rem; flex-wrap: wrap; }
   .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 0.65rem 1.2rem;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px; padding: 0.65rem 1.2rem;
+    border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    border: none; transition: all 0.15s; font-family: inherit;
   }
-
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-primary {
-    background: var(--accent);
-    color: var(--dark);
-    flex: 1;
-    justify-content: center;
-    font-size: 0.95rem;
-    padding: 0.8rem 1.5rem;
-    box-shadow: 0 2px 8px rgba(200,168,75,0.3);
+    background: var(--accent); color: var(--dark); flex: 1; justify-content: center;
+    font-size: 0.95rem; padding: 0.8rem 1.5rem; box-shadow: 0 2px 8px rgba(200,168,75,0.3);
   }
-
-  .btn-primary:hover:not(:disabled) {
-    background: var(--accent-light);
-    box-shadow: 0 4px 16px rgba(200,168,75,0.4);
-    transform: translateY(-1px);
-  }
-
-  .btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .btn-secondary {
-    background: var(--bg);
-    color: var(--muted);
-    border: 1.5px solid var(--border);
-  }
-
+  .btn-primary:hover:not(:disabled) { background: var(--accent-light); transform: translateY(-1px); }
+  .btn-secondary { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); }
   .btn-secondary:hover { background: #e8edf4; color: var(--text); }
-
-  .btn-copy {
-    background: var(--green);
-    color: #fff;
-    margin-left: auto;
-  }
-
+  .btn-copy { background: var(--green); color: #fff; }
   .btn-copy:hover { background: #256040; }
+  .btn-pdf { background: #c0392b; color: #fff; }
+  .btn-pdf:hover { background: #a93226; }
+  .btn-word { background: var(--blue); color: #fff; }
+  .btn-word:hover { background: #1d4ed8; }
+  .btn-save { background: var(--dark); color: #fff; }
+  .btn-save:hover { background: #2d3548; }
+  .btn-mic {
+    background: var(--bg); color: var(--muted); border: 1.5px solid var(--border);
+    width: 44px; height: 44px; padding: 0; justify-content: center; font-size: 1.2rem; border-radius: 8px;
+  }
+  .btn-mic.recording { background: var(--red); color: #fff; border-color: var(--red); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(192,57,43,0.5); } 50% { box-shadow: 0 0 0 8px rgba(192,57,43,0); } }
+  .btn-del { background: #fff; color: var(--red); border: 1.5px solid #f0c8c8; padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+  .btn-del:hover { background: #fdf2f2; }
+  .btn-sm { padding: 0.45rem 0.8rem; font-size: 0.8rem; }
 
   .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(26,31,46,0.3);
-    border-top-color: var(--dark);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    display: none;
+    width: 16px; height: 16px; border: 2px solid rgba(26,31,46,0.3);
+    border-top-color: var(--dark); border-radius: 50%; animation: spin 0.7s linear infinite; display: none;
   }
-
   @keyframes spin { to { transform: rotate(360deg); } }
-
   .loading .spinner { display: block; }
   .loading .btn-icon { display: none; }
 
-  .output-area {
-    display: none;
-  }
-
-  .output-area.visible { display: block; }
-
-  .output-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.75rem;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .output-meta {
-    font-size: 0.78rem;
-    color: var(--muted);
-  }
-
-  pre {
-    background: #0f172a;
-    color: #e2e8f0;
-    border-radius: 8px;
-    padding: 1.5rem;
-    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-    font-size: 0.82rem;
-    line-height: 1.7;
-    overflow-x: auto;
-    white-space: pre-wrap;
-    word-break: break-word;
-    border: 1px solid #1e293b;
-  }
-
   .status-bar {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    padding: 1rem 1.25rem;
-    border-radius: 8px;
-    font-size: 0.88rem;
-    font-weight: 500;
-    margin-bottom: 1rem;
+    display: none; align-items: center; gap: 10px; padding: 0.9rem 1.1rem;
+    border-radius: 8px; font-size: 0.86rem; font-weight: 500; margin-bottom: 1rem;
   }
-
   .status-bar.visible { display: flex; }
   .status-bar.loading { background: #fef9e7; border: 1px solid #f5d87a; color: #92670a; }
   .status-bar.error { background: #fdf2f2; border: 1px solid #f5c6c6; color: var(--red); }
   .status-bar.success { background: #f0faf5; border: 1px solid #a7d9bb; color: #1a6b3c; }
 
+  .output-area { display: none; }
+  .output-area.visible { display: block; }
+  .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+  .output-meta { font-size: 0.78rem; color: var(--muted); }
+  pre {
+    background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 1.5rem;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace; font-size: 0.82rem;
+    line-height: 1.7; overflow-x: auto; white-space: pre-wrap; word-break: break-word; border: 1px solid #1e293b;
+  }
+
   .info-box {
-    background: linear-gradient(135deg, #1a1f2e, #2d3548);
-    border-radius: var(--radius);
-    padding: 1.25rem 1.5rem;
-    color: #94a3b8;
-    font-size: 0.83rem;
-    line-height: 1.7;
-    border: 1px solid rgba(255,255,255,0.06);
+    background: linear-gradient(135deg, #1a1f2e, #2d3548); border-radius: var(--radius);
+    padding: 1.25rem 1.5rem; color: #94a3b8; font-size: 0.83rem; line-height: 1.7; border: 1px solid rgba(255,255,255,0.06);
   }
-
   .info-box strong { color: var(--accent-light); }
-
-  .info-box .step {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 0.4rem 0;
-  }
-
+  .info-box .step { display: flex; align-items: flex-start; gap: 10px; padding: 0.4rem 0; }
   .step-num {
-    background: rgba(200,168,75,0.2);
-    color: var(--accent);
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-    flex-shrink: 0;
-    margin-top: 1px;
+    background: rgba(200,168,75,0.2); color: var(--accent); width: 20px; height: 20px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 1px;
   }
-
   .copy-success { color: #2d7a4f !important; }
 
-  .btn-pdf {
-    background: #c0392b;
-    color: #fff;
+  /* Archiv */
+  .archiv-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .archiv-count { font-size: 0.85rem; color: var(--muted); }
+  .archiv-count b { color: var(--dark); }
+  .ang-row {
+    display: grid; grid-template-columns: auto 1fr auto auto; gap: 0.75rem; align-items: center;
+    padding: 0.85rem 1rem; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 0.6rem;
+    background: var(--card); cursor: pointer; transition: box-shadow 0.15s;
   }
-  .btn-pdf:hover { background: #a93226; }
+  .ang-row:hover { box-shadow: var(--shadow); border-color: var(--accent); }
+  .ang-main { min-width: 0; }
+  .ang-nr { font-weight: 700; font-size: 0.9rem; }
+  .ang-sub { font-size: 0.8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ang-brutto { font-weight: 700; font-size: 0.9rem; white-space: nowrap; }
+  .badge { font-size: 0.66rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.4px; }
+  .badge-muster { background: #eef1f6; color: #64748b; }
+  .badge-generiert { background: rgba(200,168,75,0.2); color: #97781f; }
+  .badge-manuell { background: #e0ecff; color: #1d4ed8; }
+  @media (max-width: 620px) {
+    .ang-row { grid-template-columns: 1fr auto; }
+    .ang-badge-cell { grid-row: 1; grid-column: 2; }
+    .ang-brutto { grid-column: 1; }
+  }
 
-  .btn-word {
-    background: #2563eb;
-    color: #fff;
+  /* Preis-Tabellen (Stammdaten) */
+  table.preise { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 0.5rem; }
+  table.preise th { text-align: left; font-size: 0.7rem; text-transform: uppercase; color: var(--muted); padding: 0.3rem 0.4rem; letter-spacing: 0.5px; }
+  table.preise td { padding: 0.2rem 0.3rem; }
+  table.preise input { padding: 0.4rem 0.5rem; font-size: 0.83rem; }
+  table.preise td.name-col { width: 55%; }
+  table.preise td.num-col { width: 22%; }
+  .stamm-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+  @media (max-width: 620px) { .stamm-grid { grid-template-columns: 1fr; } }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.55);
+    z-index: 200; align-items: flex-start; justify-content: center; padding: 2rem 1rem; overflow-y: auto;
   }
-  .btn-word:hover { background: #1d4ed8; }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: var(--card); border-radius: var(--radius); max-width: 760px; width: 100%;
+    box-shadow: var(--shadow-lg); padding: 1.5rem;
+  }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .modal-header h3 { font-size: 1.1rem; }
+  .modal-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted); line-height: 1; }
+
+  .hint { font-size: 0.8rem; color: var(--muted); line-height: 1.6; margin-top: 0.4rem; }
+  .interim { color: #94a3b8; font-style: italic; }
 
   @media print {
     body * { visibility: hidden; }
     #printArea, #printArea * { visibility: visible; }
     #printArea {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%;
-      background: #fff;
-      padding: 2cm;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 11pt;
-      line-height: 1.6;
-      color: #000;
-      white-space: pre-wrap;
-      word-break: break-word;
+      position: fixed; top: 0; left: 0; width: 100%; background: #fff; padding: 2cm;
+      font-family: 'Courier New', Courier, monospace; font-size: 11pt; line-height: 1.6; color: #000;
+      white-space: pre-wrap; word-break: break-word;
     }
   }
 </style>
@@ -362,23 +262,41 @@
       <div class="logo-sub">KI-Angebotsgenerator</div>
     </div>
   </div>
-  <span class="header-badge">Beta · claude-sonnet-4-6</span>
+  <span class="header-badge">Demo · claude-sonnet-4-6</span>
 </header>
 
+<div class="demo-banner">🔒 Demo-Umgebung mit Musterdaten — bitte keine echten Personendaten eingeben.</div>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-view="erstellen">⚡ Angebot erstellen</button>
+  <button class="tab-btn" data-view="archiv">🗂️ Angebotsarchiv</button>
+  <button class="tab-btn" data-view="stammdaten">⚙️ Stammdaten</button>
+</nav>
+
 <main>
-  <div class="hero">
-    <h1>Angebot in Sekunden — aus jeder Kundenanfrage</h1>
-    <p>Kundenanfrage eingeben oder einfügen. Die KI erstellt ein vollständiges, kalkuliertes Angebot im Betriebsformat.</p>
-  </div>
 
-  <div class="grid">
-    <div class="card card-full">
+  <!-- ============ TAB 1: ANGEBOT ERSTELLEN ============ -->
+  <section class="view active" id="view-erstellen">
+    <div class="hero">
+      <h1>Angebot in Sekunden — aus jeder Kundenanfrage</h1>
+      <p>Anfrage eintippen, als Screenshot/PDF einlesen oder einsprechen. Die KI erstellt daraus ein kalkuliertes Angebot auf Basis des Angebotsarchivs und der Stammdaten.</p>
+    </div>
+
+    <div class="card">
       <div class="card-label">✉️ Kundenanfrage</div>
-      <textarea id="anfrage" placeholder="Kundenanfrage hier einfügen — z.B. eine E-Mail, WhatsApp-Nachricht oder mündliche Notiz:
 
-Guten Tag, ich möchte mein Badezimmer neu fliesen lassen. Der Boden ist ca. 8 m², die Wände ca. 18 m². Wir wünschen uns anthrazitfarbene Fliesen, modern und pflegeleicht. Der alte Belag soll entfernt werden. Wann könnten Sie beginnen?"></textarea>
+      <div class="source-bar">
+        <div class="dropzone" id="dropzone">
+          📎 Screenshot/Foto/PDF hierher ziehen, klicken oder <b>Strg+V</b> einfügen
+        </div>
+        <button class="btn btn-mic" id="micBtn" title="Anfrage einsprechen">🎤</button>
+      </div>
+      <input type="file" id="fileInput" accept="image/*,application/pdf" style="display:none">
+
+      <textarea id="anfrage" placeholder="Kundenanfrage hier einfügen — z.B. eine E-Mail, WhatsApp-Nachricht oder mündliche Notiz. Oder oben einen Screenshot einlesen bzw. das Mikrofon nutzen."></textarea>
+
       <div class="btn-row">
-        <button class="btn btn-secondary" onclick="ladeBeispiel()">📋 Beispielanfrage laden</button>
+        <button class="btn btn-secondary" onclick="ladeBeispiel()">📋 Beispielanfrage</button>
         <button class="btn btn-secondary" onclick="leeren()">✕ Leeren</button>
         <button class="btn btn-primary" id="genBtn" onclick="generiereAngebot()">
           <span class="btn-icon">⚡</span>
@@ -387,41 +305,181 @@ Guten Tag, ich möchte mein Badezimmer neu fliesen lassen. Der Boden ist ca. 8 m
         </button>
       </div>
     </div>
-  </div>
 
-  <div class="status-bar" id="statusBar">
-    <span id="statusIcon"></span>
-    <span id="statusText"></span>
-  </div>
+    <div class="status-bar" id="statusBar">
+      <span id="statusIcon"></span>
+      <span id="statusText"></span>
+    </div>
 
-  <div class="output-area" id="outputArea">
-    <div class="card">
-      <div class="output-header">
-        <div class="card-label">📄 Generiertes Angebot</div>
-        <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-          <span class="output-meta" id="outputMeta"></span>
-          <button class="btn btn-copy" id="copyBtn" onclick="kopieren()">📋 Kopieren</button>
-          <button class="btn btn-pdf" onclick="exportPDF()">🖨️ PDF</button>
-          <button class="btn btn-word" onclick="exportWord()">📝 Word</button>
+    <div class="output-area" id="outputArea">
+      <div class="card">
+        <div class="output-header">
+          <div class="card-label">📄 Generiertes Angebot</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            <span class="output-meta" id="outputMeta"></span>
+            <button class="btn btn-save btn-sm" id="archivBtn" onclick="insArchiv()">💾 Ins Archiv übernehmen</button>
+            <button class="btn btn-copy btn-sm" id="copyBtn" onclick="kopieren()">📋 Kopieren</button>
+            <button class="btn btn-pdf btn-sm" onclick="exportPDF()">🖨️ PDF</button>
+            <button class="btn btn-word btn-sm" onclick="exportWord()">📝 Word</button>
+          </div>
         </div>
+        <div id="printArea" style="display:none;"></div>
+        <pre id="ausgabe"></pre>
       </div>
-      <div id="printArea" style="display:none;"></div>
-      <pre id="ausgabe"></pre>
     </div>
-  </div>
 
-  <div class="grid" style="margin-top:1.5rem;">
-    <div class="info-box card-full" style="grid-column:1/-1">
+    <div class="info-box">
       <strong>So funktioniert der Generator</strong>
-      <div class="step"><div class="step-num">1</div><div>Kundenanfrage eingeben — E-Mail, Notiz, WhatsApp-Text oder freie Beschreibung.</div></div>
-      <div class="step"><div class="step-num">2</div><div>Auf <strong>Angebot generieren</strong> klicken. Die KI analysiert die Anfrage anhand von 30 Musterangeboten des Betriebs.</div></div>
-      <div class="step"><div class="step-num">3</div><div>Fertig kalkuliertes Angebot erscheint in 10–20 Sekunden — mit Positionen, Preisen, MwSt. und Zahlungsbedingungen im Betriebsformat.</div></div>
-      <div class="step"><div class="step-num">4</div><div>Kopieren und in Word, Outlook oder die eigene Branchensoftware übertragen.</div></div>
+      <div class="step"><div class="step-num">1</div><div>Kundenanfrage eingeben — als Text, per Screenshot/PDF (OCR) oder eingesprochen.</div></div>
+      <div class="step"><div class="step-num">2</div><div>Auf <strong>Angebot generieren</strong> klicken. Die KI nutzt das <strong>Angebotsarchiv</strong> und die <strong>Stammdaten</strong> als Grundlage.</div></div>
+      <div class="step"><div class="step-num">3</div><div>Fertiges Angebot in 10–20 Sekunden — mit Positionen, Preisen, MwSt. und Zahlungsbedingungen.</div></div>
+      <div class="step"><div class="step-num">4</div><div>Bei Bedarf <strong>ins Archiv übernehmen</strong>, kopieren oder als PDF/Word exportieren.</div></div>
     </div>
-  </div>
+  </section>
+
+  <!-- ============ TAB 2: ARCHIV ============ -->
+  <section class="view" id="view-archiv">
+    <div class="hero">
+      <h1>Angebotsarchiv</h1>
+      <p>Alle historischen und generierten Angebote. Sie bilden die Wissensbasis für neue Angebote.</p>
+    </div>
+
+    <div class="archiv-head">
+      <div class="archiv-count"><b id="archivCount">–</b> Angebote im Speicher</div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <input type="text" id="archivSuche" placeholder="🔍 Suchen (Nummer, Kunde, Projekt) …" style="width:220px" oninput="renderArchiv()">
+        <button class="btn btn-secondary btn-sm" onclick="oeffneManuell()">➕ Manuell hinzufügen</button>
+      </div>
+    </div>
+
+    <div class="status-bar" id="archivStatus"><span id="archivStatusIcon"></span><span id="archivStatusText"></span></div>
+    <div id="archivListe"></div>
+  </section>
+
+  <!-- ============ TAB 3: STAMMDATEN ============ -->
+  <section class="view" id="view-stammdaten">
+    <div class="hero">
+      <h1>Stammdaten</h1>
+      <p>Diese Werte fließen bei jeder Generierung in den KI-Prompt ein und haben Vorrang vor älteren Musterpreisen.</p>
+    </div>
+
+    <div class="status-bar" id="stammStatus"><span id="stammStatusIcon"></span><span id="stammStatusText"></span></div>
+
+    <div class="card">
+      <div class="card-label">🏢 Betrieb & Konditionen</div>
+      <div class="fld-group">
+        <label class="fld">Briefkopf (erscheint auf jedem Angebot)</label>
+        <textarea id="s_header" style="min-height:120px"></textarea>
+      </div>
+      <div class="stamm-grid">
+        <div class="fld-group"><label class="fld">Stundensatz Meister (€/h)</label><input type="number" id="s_meister" step="1"></div>
+        <div class="fld-group"><label class="fld">Stundensatz Geselle (€/h)</label><input type="number" id="s_geselle" step="1"></div>
+        <div class="fld-group"><label class="fld">Stundensatz Azubi (€/h)</label><input type="number" id="s_azubi" step="1"></div>
+        <div class="fld-group"><label class="fld">Anfahrtspauschale (€)</label><input type="number" id="s_anfahrt" step="1"></div>
+        <div class="fld-group"><label class="fld">MwSt. (%)</label><input type="number" id="s_mwst" step="1"></div>
+        <div class="fld-group"><label class="fld">Gültigkeit (Tage)</label><input type="number" id="s_gueltig" step="1"></div>
+      </div>
+      <div class="fld-group">
+        <label class="fld">Übliche Zahlungsbedingungen</label>
+        <input type="text" id="s_zahlung">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">🧱 Materialpreise (Verkauf, netto)</div>
+      <table class="preise"><thead><tr><th>Bezeichnung</th><th>Preis (€)</th><th>Einheit</th><th></th></tr></thead>
+        <tbody id="matBody"></tbody></table>
+      <button class="btn btn-secondary btn-sm" onclick="addPreis('mat')">➕ Position</button>
+    </div>
+
+    <div class="card">
+      <div class="card-label">🛠️ Leistungspreise (Lohn, netto)</div>
+      <table class="preise"><thead><tr><th>Bezeichnung</th><th>Preis (€)</th><th>Einheit</th><th></th></tr></thead>
+        <tbody id="leistBody"></tbody></table>
+      <button class="btn btn-secondary btn-sm" onclick="addPreis('leist')">➕ Position</button>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="stammSaveBtn" onclick="speichereStammdaten()">💾 Stammdaten speichern</button>
+    </div>
+  </section>
+
 </main>
 
+<!-- Modal: Angebot-Detail / Manuell hinzufügen -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Angebot</h3>
+      <button class="modal-close" onclick="schliesseModal()">×</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
 <script>
+/* =================== Supabase-Konfiguration (Anon — RLS-geschützt) =================== */
+const SB_URL = 'https://xuuitgtnnphcwjzkaihc.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1dWl0Z3RubnBoY3dqemthaWhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Njk5MDYsImV4cCI6MjA5NzM0NTkwNn0.4MPIuF73kmZ9ZXfedNEcxXiSPQf4V-O6SxHLlksX6Qs';
+
+async function sb(path, opts = {}) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      apikey: SB_ANON,
+      Authorization: `Bearer ${SB_ANON}`,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) throw new Error(`Supabase HTTP ${res.status}: ${await res.text()}`);
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+/* HTML-Escaping — Pflicht bei jeder innerHTML-Ausgabe von DB-/OCR-/KI-Daten */
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* Angebotstext parsen (gleiche Logik wie Seed) */
+function parseAngebot(text) {
+  const head = text.match(/ANGEBOT\s+(FM-\d{4}-\d{3})\s+\|\s+(\d{2}\.\d{2}\.\d{4})/);
+  const nummer = head ? head[1] : null;
+  let datum = null;
+  if (head) { const [d, m, y] = head[2].split('.'); datum = `${y}-${m}-${d}`; }
+  const kunde = (text.match(/Auftraggeber\s*:\s*(.+)/) || [])[1]?.trim() || null;
+  const projekt = (text.match(/Projekt\s*:\s*(.+)/) || [])[1]?.trim() || null;
+  const bm = text.match(/BRUTTO:\s*([\d.]+),(\d{2})\s*€/);
+  const brutto = bm ? parseFloat(bm[1].replace(/\./g, '') + '.' + bm[2]) : null;
+  return { nummer, datum, kunde, projekt, brutto };
+}
+
+function fmtBrutto(b) {
+  if (b == null) return '—';
+  return Number(b).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+function fmtDatum(d) {
+  if (!d) return '';
+  const [y, m, day] = d.split('-'); return `${day}.${m}.${y}`;
+}
+
+/* =================== Tab-Navigation =================== */
+const views = ['erstellen', 'archiv', 'stammdaten'];
+function zeigeView(name) {
+  if (!views.includes(name)) name = 'erstellen';
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
+  document.getElementById('view-' + name).classList.add('active');
+  location.hash = name;
+  if (name === 'archiv') ladeArchiv();
+  if (name === 'stammdaten') ladeStammdaten();
+}
+document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => zeigeView(b.dataset.view)));
+window.addEventListener('hashchange', () => zeigeView(location.hash.slice(1)));
+
+/* =================== TAB 1: Generierung =================== */
 const BEISPIELANFRAGE = `Betreff: Anfrage Badezimmer-Sanierung
 
 Guten Tag,
@@ -446,125 +504,356 @@ Mit freundlichen Grüßen
 Peter Hoffmann
 Tel: 0173 / 123 45 67`;
 
-function ladeBeispiel() {
-  document.getElementById('anfrage').value = BEISPIELANFRAGE;
-}
-
+function ladeBeispiel() { document.getElementById('anfrage').value = BEISPIELANFRAGE; }
 function leeren() {
   document.getElementById('anfrage').value = '';
   document.getElementById('outputArea').classList.remove('visible');
   setStatus('');
 }
-
 function setStatus(typ, text) {
   const bar = document.getElementById('statusBar');
-  const icon = document.getElementById('statusIcon');
-  const msg = document.getElementById('statusText');
   if (!typ) { bar.className = 'status-bar'; return; }
   const icons = { loading: '⏳', error: '❌', success: '✅' };
-  icon.textContent = icons[typ] || '';
-  msg.textContent = text;
+  document.getElementById('statusIcon').textContent = icons[typ] || '';
+  document.getElementById('statusText').textContent = text;
   bar.className = `status-bar visible ${typ}`;
 }
 
+let letztesAngebot = '';
+
 async function generiereAngebot() {
   const anfrage = document.getElementById('anfrage').value.trim();
-  if (!anfrage) {
-    setStatus('error', 'Bitte zuerst eine Kundenanfrage eingeben.');
-    return;
-  }
+  if (!anfrage) { setStatus('error', 'Bitte zuerst eine Kundenanfrage eingeben.'); return; }
 
   const btn = document.getElementById('genBtn');
-  const btnText = document.getElementById('btnText');
-  btn.classList.add('loading');
-  btn.disabled = true;
-  btnText.textContent = 'Angebot wird erstellt …';
+  btn.classList.add('loading'); btn.disabled = true;
+  document.getElementById('btnText').textContent = 'Angebot wird erstellt …';
   document.getElementById('outputArea').classList.remove('visible');
-  setStatus('loading', 'Claude analysiert die Anfrage und erstellt das Angebot — bitte ca. 15–20 Sekunden warten …');
-
+  setStatus('loading', 'Claude analysiert die Anfrage anhand von Archiv und Stammdaten — ca. 15–20 Sekunden …');
   const start = Date.now();
 
   try {
     const res = await fetch('/api/angebot', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ anfrage })
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anfrage }),
     });
-
     const data = await res.json();
-
-    if (!res.ok || data.error) {
-      setStatus('error', data.error || `Fehler ${res.status}`);
-      return;
-    }
+    if (!res.ok || data.error) { setStatus('error', data.error || `Fehler ${res.status}`); return; }
 
     const dauer = ((Date.now() - start) / 1000).toFixed(1);
+    letztesAngebot = data.angebot;
     document.getElementById('ausgabe').textContent = data.angebot;
     document.getElementById('outputMeta').textContent = `generiert in ${dauer}s`;
+    const ab = document.getElementById('archivBtn');
+    ab.disabled = false; ab.textContent = '💾 Ins Archiv übernehmen';
     document.getElementById('outputArea').classList.add('visible');
-    setStatus('success', `Angebot erfolgreich generiert (${dauer} Sekunden). Prüfen, kopieren, fertig.`);
+    setStatus('success', `Angebot erfolgreich generiert (${dauer} s). Prüfen, ins Archiv übernehmen oder exportieren.`);
     document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
   } catch (err) {
     setStatus('error', `Verbindungsfehler: ${err.message}`);
   } finally {
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    btnText.textContent = 'Angebot generieren';
+    btn.classList.remove('loading'); btn.disabled = false;
+    document.getElementById('btnText').textContent = 'Angebot generieren';
   }
 }
 
-function exportPDF() {
-  const text = document.getElementById('ausgabe').textContent;
-  const printArea = document.getElementById('printArea');
-  printArea.textContent = text;
-  printArea.style.display = 'block';
-  window.print();
-  printArea.style.display = 'none';
+async function insArchiv() {
+  if (!letztesAngebot) return;
+  const btn = document.getElementById('archivBtn');
+  btn.disabled = true; btn.textContent = '⏳ Speichern …';
+  try {
+    const p = parseAngebot(letztesAngebot);
+    await sb('angebot_angebote', {
+      method: 'POST', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ ...p, angebotstext: letztesAngebot, quelle: 'generiert' }),
+    });
+    btn.textContent = '✓ Gespeichert';
+    setStatus('success', `Angebot ${p.nummer || ''} wurde ins Archiv übernommen.`);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = '💾 Ins Archiv übernehmen';
+    setStatus('error', `Speichern fehlgeschlagen: ${err.message}`);
+  }
 }
 
+/* Export PDF / Word / Kopieren */
+function exportPDF() {
+  const text = document.getElementById('ausgabe').textContent;
+  const pa = document.getElementById('printArea');
+  pa.textContent = text; pa.style.display = 'block';
+  window.print(); pa.style.display = 'none';
+}
 function exportWord() {
   const text = document.getElementById('ausgabe').textContent;
-  const html = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:w="urn:schemas-microsoft-com:office:word"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="utf-8">
-      <style>
-        body { font-family: Courier New, monospace; font-size: 11pt; line-height: 1.6; margin: 2cm; }
-        pre { white-space: pre-wrap; word-break: break-word; font-family: Courier New, monospace; font-size: 11pt; }
-      </style>
-    </head>
-    <body><pre>${text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre></body>
-    </html>`;
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="utf-8"><style>body{font-family:Courier New,monospace;font-size:11pt;line-height:1.6;margin:2cm;}pre{white-space:pre-wrap;word-break:break-word;font-family:Courier New,monospace;font-size:11pt;}</style></head>
+    <body><pre>${esc(text)}</pre></body></html>`;
   const blob = new Blob(['﻿', html], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const datum = new Date().toISOString().slice(0,10);
-  a.href = url;
-  a.download = `Angebot_${datum}.doc`;
-  a.click();
-  URL.revokeObjectURL(url);
+  a.href = url; a.download = `Angebot_${new Date().toISOString().slice(0, 10)}.doc`;
+  a.click(); URL.revokeObjectURL(url);
 }
-
 async function kopieren() {
-  const text = document.getElementById('ausgabe').textContent;
   const btn = document.getElementById('copyBtn');
   try {
-    await navigator.clipboard.writeText(text);
-    btn.textContent = '✅ Kopiert!';
-    btn.classList.add('copy-success');
+    await navigator.clipboard.writeText(document.getElementById('ausgabe').textContent);
+    btn.textContent = '✅ Kopiert!'; btn.classList.add('copy-success');
     setTimeout(() => { btn.textContent = '📋 Kopieren'; btn.classList.remove('copy-success'); }, 2000);
-  } catch {
-    btn.textContent = '❌ Fehler';
-    setTimeout(() => { btn.textContent = '📋 Kopieren'; }, 2000);
-  }
+  } catch { btn.textContent = '❌ Fehler'; setTimeout(() => { btn.textContent = '📋 Kopieren'; }, 2000); }
 }
 
 document.getElementById('anfrage').addEventListener('keydown', e => {
   if (e.ctrlKey && e.key === 'Enter') generiereAngebot();
 });
+
+/* =================== OCR: Datei / Drag&Drop / Paste =================== */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => { if (e.target.files[0]) verarbeiteDatei(e.target.files[0]); fileInput.value = ''; });
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if (e.dataTransfer.files[0]) verarbeiteDatei(e.dataTransfer.files[0]);
+});
+document.addEventListener('paste', e => {
+  if (document.getElementById('view-erstellen').classList.contains('active') === false) return;
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+  if (item) { e.preventDefault(); verarbeiteDatei(item.getAsFile()); }
+});
+
+function verarbeiteDatei(file) {
+  if (!file) return;
+  if (!/^image\/|application\/pdf/.test(file.type)) { setStatus('error', 'Nur Bilder oder PDF werden per OCR gelesen.'); return; }
+  setStatus('loading', `Text wird aus „${file.name || 'Screenshot'}" erkannt (OCR) …`);
+  const reader = new FileReader();
+  reader.onload = async () => {
+    const base64 = String(reader.result).split(',')[1];
+    try {
+      const res = await fetch(`${SB_URL}/functions/v1/ocr`, {
+        method: 'POST',
+        headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ base64, mimeType: file.type, filename: file.name || 'screenshot.png' }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) { setStatus('error', `OCR-Fehler: ${data.error || res.status}`); return; }
+      const ta = document.getElementById('anfrage');
+      ta.value = (ta.value.trim() ? ta.value.trim() + '\n\n' : '') + (data.text || '').trim();
+      setStatus('success', 'Text erkannt und eingefügt. Bitte prüfen und ggf. korrigieren.');
+    } catch (err) { setStatus('error', `OCR-Verbindungsfehler: ${err.message}`); }
+  };
+  reader.readAsDataURL(file);
+}
+
+/* =================== Spracheingabe (Web Speech API) =================== */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const micBtn = document.getElementById('micBtn');
+let recog = null, recording = false, interimEl = null;
+
+if (!SR) {
+  micBtn.style.display = 'none';
+} else {
+  micBtn.addEventListener('click', () => recording ? stopRec() : startRec());
+}
+function startRec() {
+  recog = new SR();
+  recog.lang = 'de-DE'; recog.continuous = true; recog.interimResults = true;
+  const ta = document.getElementById('anfrage');
+  let basis = ta.value.trim();
+  recog.onresult = e => {
+    let final = '', interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const t = e.results[i][0].transcript;
+      if (e.results[i].isFinal) final += t; else interim += t;
+    }
+    if (final) basis = (basis ? basis + ' ' : '') + final.trim();
+    ta.value = basis + (interim ? ' ' + interim : '');
+  };
+  recog.onerror = e => { setStatus('error', `Spracherkennung: ${e.error}`); stopRec(); };
+  recog.onend = () => { if (recording) recog.start(); }; // Auto-Restart bei Pause
+  recog.start();
+  recording = true; micBtn.classList.add('recording');
+  setStatus('loading', '🎤 Aufnahme läuft — sprechen Sie die Anfrage. Zum Beenden erneut aufs Mikrofon klicken.');
+}
+function stopRec() {
+  recording = false; micBtn.classList.remove('recording');
+  if (recog) { recog.onend = null; recog.stop(); recog = null; }
+  setStatus('success', 'Aufnahme beendet. Text prüfen und ggf. korrigieren.');
+}
+
+/* =================== TAB 2: Archiv =================== */
+let archivDaten = [];
+function setArchivStatus(typ, text) {
+  const bar = document.getElementById('archivStatus');
+  if (!typ) { bar.className = 'status-bar'; return; }
+  const icons = { loading: '⏳', error: '❌', success: '✅' };
+  document.getElementById('archivStatusIcon').textContent = icons[typ] || '';
+  document.getElementById('archivStatusText').textContent = text;
+  bar.className = `status-bar visible ${typ}`;
+}
+async function ladeArchiv() {
+  setArchivStatus('loading', 'Archiv wird geladen …');
+  try {
+    archivDaten = await sb('angebot_angebote?select=id,nummer,datum,kunde,projekt,brutto,quelle&order=datum.desc.nullslast,created_at.desc');
+    setArchivStatus('');
+    renderArchiv();
+  } catch (err) { setArchivStatus('error', `Laden fehlgeschlagen: ${err.message}`); }
+}
+function renderArchiv() {
+  const q = document.getElementById('archivSuche').value.toLowerCase().trim();
+  const liste = document.getElementById('archivListe');
+  document.getElementById('archivCount').textContent = archivDaten.length;
+  const gefiltert = archivDaten.filter(a =>
+    !q || [a.nummer, a.kunde, a.projekt].some(f => (f || '').toLowerCase().includes(q)));
+  if (!gefiltert.length) { liste.innerHTML = `<p class="hint">Keine Angebote gefunden.</p>`; return; }
+  liste.innerHTML = gefiltert.map(a => `
+    <div class="ang-row" onclick="zeigeDetail('${a.id}')">
+      <div class="ang-badge-cell"><span class="badge badge-${esc(a.quelle)}">${esc(a.quelle)}</span></div>
+      <div class="ang-main">
+        <div class="ang-nr">${esc(a.nummer || '—')} <span style="font-weight:400;color:var(--muted);font-size:0.8rem">${fmtDatum(a.datum)}</span></div>
+        <div class="ang-sub">${esc(a.kunde || '')}${a.projekt ? ' · ' + esc(a.projekt) : ''}</div>
+      </div>
+      <div class="ang-brutto">${fmtBrutto(a.brutto)}</div>
+      <button class="btn btn-del" onclick="event.stopPropagation();loescheAngebot('${a.id}','${esc(a.nummer)}')">🗑️</button>
+    </div>`).join('');
+}
+async function zeigeDetail(id) {
+  try {
+    const rows = await sb(`angebot_angebote?id=eq.${id}&select=nummer,angebotstext`);
+    const a = rows[0];
+    document.getElementById('modalTitle').textContent = a.nummer || 'Angebot';
+    document.getElementById('modalBody').innerHTML = `
+      <pre style="max-height:60vh;overflow:auto">${esc(a.angebotstext)}</pre>
+      <div class="btn-row"><button class="btn btn-copy" onclick="kopiereText(this)" data-text="${esc(a.angebotstext)}">📋 Kopieren</button></div>`;
+    document.getElementById('modal').classList.add('visible');
+  } catch (err) { setArchivStatus('error', `Detail konnte nicht geladen werden: ${err.message}`); }
+}
+async function kopiereText(btn) {
+  try { await navigator.clipboard.writeText(btn.dataset.text); btn.textContent = '✅ Kopiert!'; }
+  catch { btn.textContent = '❌ Fehler'; }
+}
+async function loescheAngebot(id, nummer) {
+  if (!confirm(`Angebot ${nummer} wirklich löschen?`)) return;
+  try {
+    await sb(`angebot_angebote?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    archivDaten = archivDaten.filter(a => a.id !== id);
+    renderArchiv();
+    setArchivStatus('success', `Angebot ${nummer} gelöscht.`);
+  } catch (err) { setArchivStatus('error', `Löschen fehlgeschlagen: ${err.message}`); }
+}
+function schliesseModal() { document.getElementById('modal').classList.remove('visible'); }
+document.getElementById('modal').addEventListener('click', e => { if (e.target.id === 'modal') schliesseModal(); });
+
+/* Manuell hinzufügen */
+function oeffneManuell() {
+  document.getElementById('modalTitle').textContent = 'Angebot manuell hinzufügen';
+  document.getElementById('modalBody').innerHTML = `
+    <p class="hint" style="margin-bottom:0.75rem">Kompletten Angebotstext im Musterformat einfügen. Nummer, Kunde und Brutto werden automatisch erkannt.</p>
+    <textarea id="manuellText" style="min-height:220px" placeholder="Angebotstext hier einfügen …"></textarea>
+    <div class="status-bar" id="manuellStatus" style="margin-top:0.75rem"></div>
+    <div class="btn-row"><button class="btn btn-primary" onclick="speichereManuell()">💾 Ins Archiv speichern</button></div>`;
+  document.getElementById('modal').classList.add('visible');
+}
+async function speichereManuell() {
+  const text = document.getElementById('manuellText').value.trim();
+  const st = document.getElementById('manuellStatus');
+  if (!text) { st.className = 'status-bar visible error'; st.textContent = 'Bitte Angebotstext einfügen.'; return; }
+  const p = parseAngebot(text);
+  if (!p.nummer) { st.className = 'status-bar visible error'; st.textContent = 'Keine Angebotsnummer (FM-JJJJ-XXX) gefunden. Bitte Format prüfen.'; return; }
+  try {
+    await sb('angebot_angebote', {
+      method: 'POST', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ ...p, angebotstext: text, quelle: 'manuell' }),
+    });
+    schliesseModal(); ladeArchiv();
+  } catch (err) { st.className = 'status-bar visible error'; st.textContent = `Fehler: ${err.message}`; }
+}
+
+/* =================== TAB 3: Stammdaten =================== */
+let stammGeladen = false;
+function setStammStatus(typ, text) {
+  const bar = document.getElementById('stammStatus');
+  if (!typ) { bar.className = 'status-bar'; return; }
+  const icons = { loading: '⏳', error: '❌', success: '✅' };
+  document.getElementById('stammStatusIcon').textContent = icons[typ] || '';
+  document.getElementById('stammStatusText').textContent = text;
+  bar.className = `status-bar visible ${typ}`;
+}
+async function ladeStammdaten(force) {
+  if (stammGeladen && !force) return;
+  setStammStatus('loading', 'Stammdaten werden geladen …');
+  try {
+    const rows = await sb('angebot_stammdaten?id=eq.1&select=daten');
+    const d = (rows[0] && rows[0].daten) || {};
+    document.getElementById('s_header').value = d.betrieb_header || '';
+    const s = d.stundensaetze || {};
+    document.getElementById('s_meister').value = s.meister ?? '';
+    document.getElementById('s_geselle').value = s.geselle ?? '';
+    document.getElementById('s_azubi').value = s.azubi ?? '';
+    document.getElementById('s_anfahrt').value = d.anfahrtspauschale ?? '';
+    document.getElementById('s_mwst').value = d.mwst ?? '';
+    document.getElementById('s_gueltig').value = d.gueltigkeit_tage ?? '';
+    document.getElementById('s_zahlung').value = d.zahlungsbedingungen || '';
+    renderPreise('mat', d.materialpreise || []);
+    renderPreise('leist', d.leistungspreise || []);
+    stammGeladen = true;
+    setStammStatus('');
+  } catch (err) { setStammStatus('error', `Laden fehlgeschlagen: ${err.message}`); }
+}
+function renderPreise(art, arr) {
+  const body = document.getElementById(art === 'mat' ? 'matBody' : 'leistBody');
+  body.innerHTML = arr.map(p => zeilePreis(art, p)).join('');
+}
+function zeilePreis(art, p = { name: '', preis: '', einheit: '' }) {
+  return `<tr>
+    <td class="name-col"><input type="text" value="${esc(p.name)}" placeholder="Bezeichnung"></td>
+    <td class="num-col"><input type="number" step="0.01" value="${esc(p.preis)}" placeholder="0,00"></td>
+    <td class="num-col"><input type="text" value="${esc(p.einheit)}" placeholder="m²"></td>
+    <td><button class="btn btn-del" onclick="this.closest('tr').remove()">✕</button></td>
+  </tr>`;
+}
+function addPreis(art) {
+  const body = document.getElementById(art === 'mat' ? 'matBody' : 'leistBody');
+  body.insertAdjacentHTML('beforeend', zeilePreis(art));
+}
+function sammlePreise(art) {
+  const body = document.getElementById(art === 'mat' ? 'matBody' : 'leistBody');
+  return [...body.querySelectorAll('tr')].map(tr => {
+    const [n, pr, e] = tr.querySelectorAll('input');
+    return { name: n.value.trim(), preis: parseFloat(pr.value) || 0, einheit: e.value.trim() };
+  }).filter(p => p.name);
+}
+async function speichereStammdaten() {
+  const btn = document.getElementById('stammSaveBtn');
+  btn.disabled = true;
+  setStammStatus('loading', 'Stammdaten werden gespeichert …');
+  const daten = {
+    betrieb_header: document.getElementById('s_header').value.trim(),
+    stundensaetze: {
+      meister: Number(document.getElementById('s_meister').value) || null,
+      geselle: Number(document.getElementById('s_geselle').value) || null,
+      azubi: Number(document.getElementById('s_azubi').value) || null,
+    },
+    anfahrtspauschale: Number(document.getElementById('s_anfahrt').value) || null,
+    mwst: Number(document.getElementById('s_mwst').value) || null,
+    gueltigkeit_tage: Number(document.getElementById('s_gueltig').value) || null,
+    zahlungsbedingungen: document.getElementById('s_zahlung').value.trim(),
+    materialpreise: sammlePreise('mat'),
+    leistungspreise: sammlePreise('leist'),
+  };
+  try {
+    await sb('angebot_stammdaten?on_conflict=id', {
+      method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ id: 1, daten, updated_at: new Date().toISOString() }),
+    });
+    setStammStatus('success', 'Stammdaten gespeichert. Sie fließen ab dem nächsten Angebot in die Kalkulation ein.');
+  } catch (err) { setStammStatus('error', `Speichern fehlgeschlagen: ${err.message}`); }
+  finally { btn.disabled = false; }
+}
+
+/* Initial: Tab aus URL-Hash */
+zeigeView(location.hash.slice(1) || 'erstellen');
 </script>
 </body>
 </html>
