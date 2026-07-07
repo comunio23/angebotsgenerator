@@ -241,14 +241,14 @@
   .hint { font-size: 0.8rem; color: var(--muted); line-height: 1.6; margin-top: 0.4rem; }
   .interim { color: #94a3b8; font-style: italic; }
 
+  .paper { background: #fff; box-shadow: var(--shadow-lg); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; }
+
+  @page { margin: 1.4cm; }
   @media print {
     body * { visibility: hidden; }
     #printArea, #printArea * { visibility: visible; }
-    #printArea {
-      position: fixed; top: 0; left: 0; width: 100%; background: #fff; padding: 2cm;
-      font-family: 'Courier New', Courier, monospace; font-size: 11pt; line-height: 1.6; color: #000;
-      white-space: pre-wrap; word-break: break-word;
-    }
+    #printArea { position: absolute; top: 0; left: 0; width: 100%; background: #fff; }
+    #printArea > div { max-width: 100% !important; padding: 0 !important; box-shadow: none !important; }
   }
 </style>
 </head>
@@ -324,7 +324,9 @@
           </div>
         </div>
         <div id="printArea" style="display:none;"></div>
-        <pre id="ausgabe"></pre>
+        <div id="belegView" class="paper"></div>
+        <pre id="ausgabe" style="display:none"></pre>
+        <button class="btn btn-secondary btn-sm" id="rohBtn" style="margin-top:0.9rem" onclick="toggleRoh()">🔤 Rohtext anzeigen</button>
       </div>
     </div>
 
@@ -456,6 +458,162 @@ function parseAngebot(text) {
   return { nummer, datum, kunde, projekt, brutto };
 }
 
+/* =================== Corporate Identity / Kopfbogen =================== */
+const BRAND = {
+  name: 'Fliesen Metzger GmbH',
+  wordTop: 'FLIESEN METZGER', wordSub: 'GMBH',
+  tagline: 'Meisterbetrieb · Fliesen · Naturstein · Bäder',
+  strasse: 'Berliner Straße 47', ort: '14612 Falkensee',
+  tel: '03322 / 45 67 89', mail: 'info@fliesen-metzger.de', web: 'www.fliesen-metzger.de',
+  steuernr: '048/123/45678', ustid: 'DE287654321', gf: 'Klaus Metzger',
+  bank: 'Sparkasse Havelland', iban: 'DE12 1605 0000 0123 4567 89', bic: 'WELADED1PMB',
+  NAVY: '#1a2438', NAVY2: '#2c3550', GOLD: '#c8a84b', GOLDD: '#8f7223',
+  INK: '#1a2438', MUT: '#6b7280', LINE: '#e5e7eb', SOFT: '#faf7ef',
+};
+
+/* Stabile Kundennummer aus dem Namen ableiten */
+function kundenNr(name) {
+  let h = 0; const s = name || 'Kunde';
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return 'KD-' + (1000 + (h % 9000));
+}
+
+/* Volltext → strukturierte Angebotsdaten für den Kopfbogen */
+function parseAngebotVoll(text) {
+  const h = text.match(/ANGEBOT\s+(FM-\d{4}-\d{3})\s*\|\s*(\d{2}\.\d{2}\.\d{4})(?:\s*\|\s*Gültig bis:\s*(\d{2}\.\d{2}\.\d{4}))?/);
+  const kundeRaw = (text.match(/Auftraggeber\s*:\s*(.+)/) || [])[1]?.trim() || '';
+  const projekt = (text.match(/Projekt\s*:\s*(.+)/) || [])[1]?.trim() || '';
+  const teile = kundeRaw.split(',').map(s => s.trim()).filter(Boolean);
+  const kunde = {
+    name: teile[0] || 'Auf Anfrage',
+    strasse: teile.length >= 2 ? teile[1] : '',
+    ort: teile.length >= 3 ? teile.slice(2).join(', ') : '',
+  };
+  const positionen = [];
+  const posRe = /^\s*(\d+\.\d+)\s+(.+?)\s{2,}([\d.,]+)\s+(\S+)\s+×\s+([\d.,]+)\s*€\s+=\s+([\d.,]+)\s*€/;
+  for (const line of text.split('\n')) {
+    const m = line.match(posRe);
+    if (m) positionen.push({ pos: m[1], grp: parseInt(m[1], 10), text: m[2].trim(), menge: m[3], einheit: m[4], ep: m[5], gp: m[6] });
+  }
+  const t = text.match(/NETTO:\s*([\d.,]+)\s*€\s*\|\s*MwSt\.?\s*(\d+)\s*%:\s*([\d.,]+)\s*€\s*\|\s*BRUTTO:\s*([\d.,]+)\s*€/);
+  const summen = t ? { netto: t[1], mwstProz: t[2], mwst: t[3], brutto: t[4] } : null;
+  const c = text.match(/Ausführung:\s*([^|\n]+?)\s*(?:\|\s*Zahlung:\s*(.+))?$/m);
+  const kond = { ausfuehrung: c ? c[1].trim() : '', zahlung: c && c[2] ? c[2].trim() : '' };
+  return {
+    nummer: h ? h[1] : '—', datum: h ? h[2] : '', gueltig: h ? (h[3] || '') : '',
+    kunde, kundenNr: kundenNr(kunde.name), projekt, positionen, summen, kond, roh: text,
+  };
+}
+
+/* Erzeugt den gebrandeten Kopfbogen als HTML (Inline-Styles → identisch in App, PDF, Word) */
+function belegHTML(text) {
+  const d = parseAngebotVoll(text), B = BRAND;
+  const F = "'Segoe UI',Arial,sans-serif", SER = "Georgia,'Times New Roman',serif";
+  const grpName = { 1: 'Material & Lieferung', 2: 'Arbeitsleistung' };
+
+  const logo = `<table cellspacing="3" cellpadding="0" style="border-collapse:separate;background:${B.NAVY};">
+    <tr><td width="18" height="18" bgcolor="${B.GOLD}"></td><td width="18" height="18" bgcolor="${B.NAVY2}"></td></tr>
+    <tr><td width="18" height="18" bgcolor="${B.NAVY2}"></td><td width="18" height="18" bgcolor="${B.GOLD}"></td></tr></table>`;
+
+  const kopf = `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;"><tr>
+    <td style="vertical-align:middle;"><table cellspacing="0" cellpadding="0"><tr>
+      <td style="padding-right:14px;">${logo}</td>
+      <td style="vertical-align:middle;">
+        <div style="font:700 20px ${SER};color:${B.NAVY};letter-spacing:1px;">${B.wordTop}<span style="color:${B.GOLD};"> ${B.wordSub}</span></div>
+        <div style="font:400 10.5px ${F};color:${B.MUT};letter-spacing:.4px;margin-top:3px;">${B.tagline}</div>
+      </td></tr></table></td>
+    <td align="right" style="vertical-align:top;font:400 11px ${F};color:${B.MUT};line-height:1.65;">
+      ${B.strasse}<br>${B.ort}<br>Tel. ${B.tel}<br>${B.mail}<br><span style="color:${B.GOLDD};">${B.web}</span></td>
+    </tr></table>
+    <div style="height:3px;background:${B.GOLD};margin-top:14px;"></div>
+    <div style="height:1px;background:${B.NAVY};margin-top:2px;"></div>`;
+
+  const meta = (k, v) => `<tr>
+    <td style="padding:6px 10px;font:600 10px ${F};color:${B.MUT};text-transform:uppercase;letter-spacing:.5px;background:${B.SOFT};border-bottom:1px solid ${B.LINE};">${k}</td>
+    <td style="padding:6px 10px;font:700 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};">${esc(v)}</td></tr>`;
+
+  const adresse = `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:26px;"><tr>
+    <td width="55%" style="vertical-align:top;">
+      <div style="font:400 8.5px ${F};color:${B.MUT};border-bottom:1px solid ${B.LINE};padding-bottom:3px;margin-bottom:14px;">${B.name} · ${B.strasse} · ${B.ort}</div>
+      <div style="font:400 13px ${F};color:${B.INK};line-height:1.7;">
+        <div style="font-weight:700;">${esc(d.kunde.name)}</div>
+        ${d.kunde.strasse ? `<div>${esc(d.kunde.strasse)}</div>` : ''}
+        ${d.kunde.ort ? `<div>${esc(d.kunde.ort)}</div>` : ''}
+      </div></td>
+    <td width="45%" style="vertical-align:top;padding-left:22px;">
+      <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border:1px solid ${B.LINE};">
+        ${meta('Angebots-Nr.', d.nummer)}${meta('Datum', d.datum || '—')}${meta('Kunden-Nr.', d.kundenNr)}${meta('Gültig bis', d.gueltig || '—')}${meta('Bearbeiter', B.gf)}
+      </table></td>
+    </tr></table>`;
+
+  const titel = `<div style="margin-top:30px;">
+      <span style="font:700 26px ${SER};color:${B.NAVY};">Angebot</span>
+      <span style="font:400 13px ${F};color:${B.MUT};">&nbsp;Nr. ${esc(d.nummer)}</span>
+      ${d.projekt ? `<div style="font:600 13px ${F};color:${B.GOLDD};margin-top:5px;">${esc(d.projekt)}</div>` : ''}
+    </div>
+    <div style="font:400 12.5px ${F};color:${B.INK};margin-top:14px;line-height:1.6;">Sehr geehrte Damen und Herren,<br>vielen Dank für Ihre Anfrage. Gern unterbreiten wir Ihnen folgendes Angebot:</div>`;
+
+  let rows = '', lastGrp = null;
+  d.positionen.forEach((p, i) => {
+    if (p.grp !== lastGrp) {
+      lastGrp = p.grp;
+      rows += `<tr><td colspan="5" style="padding:15px 10px 6px;font:700 10.5px ${F};letter-spacing:1px;text-transform:uppercase;color:${B.GOLDD};border-bottom:2px solid ${B.GOLD};">${esc(grpName[p.grp] || 'Weitere Leistungen')}</td></tr>`;
+    }
+    const bg = i % 2 ? '#ffffff' : B.SOFT;
+    rows += `<tr>
+      <td style="padding:7px 10px;font:400 11.5px ${F};color:${B.MUT};border-bottom:1px solid ${B.LINE};background:${bg};vertical-align:top;">${esc(p.pos)}</td>
+      <td style="padding:7px 10px;font:400 12.5px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};">${esc(p.text)}</td>
+      <td align="right" style="padding:7px 10px;font:400 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;">${esc(p.menge)} ${esc(p.einheit)}</td>
+      <td align="right" style="padding:7px 10px;font:400 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;">${esc(p.ep)} €</td>
+      <td align="right" style="padding:7px 10px;font:600 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;">${esc(p.gp)} €</td>
+    </tr>`;
+  });
+
+  const tabelle = d.positionen.length ? `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:20px;"><tr>
+      <td style="padding:9px 10px;font:700 10.5px ${F};letter-spacing:.5px;color:#fff;background:${B.NAVY};">POS</td>
+      <td style="padding:9px 10px;font:700 10.5px ${F};letter-spacing:.5px;color:#fff;background:${B.NAVY};">LEISTUNG</td>
+      <td align="right" style="padding:9px 10px;font:700 10.5px ${F};letter-spacing:.5px;color:#fff;background:${B.NAVY};">MENGE</td>
+      <td align="right" style="padding:9px 10px;font:700 10.5px ${F};letter-spacing:.5px;color:#fff;background:${B.NAVY};">EINZELPREIS</td>
+      <td align="right" style="padding:9px 10px;font:700 10.5px ${F};letter-spacing:.5px;color:#fff;background:${B.NAVY};">GESAMT</td></tr>
+      ${rows}</table>`
+    : `<pre style="white-space:pre-wrap;word-break:break-word;font:12px 'Consolas',monospace;color:${B.INK};background:${B.SOFT};padding:16px;border:1px solid ${B.LINE};margin-top:20px;">${esc(d.roh)}</pre>`;
+
+  const summen = d.summen ? `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:16px;"><tr><td align="right">
+      <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+        <tr><td style="padding:5px 20px 5px 0;font:400 12.5px ${F};color:${B.MUT};text-align:right;">Zwischensumme netto</td>
+            <td align="right" style="padding:5px 0;font:400 12.5px ${F};color:${B.INK};white-space:nowrap;">${esc(d.summen.netto)} €</td></tr>
+        <tr><td style="padding:5px 20px 5px 0;font:400 12.5px ${F};color:${B.MUT};text-align:right;">zzgl. ${esc(d.summen.mwstProz)} % MwSt.</td>
+            <td align="right" style="padding:5px 0;font:400 12.5px ${F};color:${B.INK};white-space:nowrap;">${esc(d.summen.mwst)} €</td></tr>
+        <tr><td style="padding:10px 20px 10px 26px;font:700 14px ${F};color:#fff;background:${B.NAVY};text-align:right;">Gesamtbetrag</td>
+            <td style="padding:10px 16px 10px 20px;font:700 14px ${F};color:${B.GOLD};background:${B.NAVY};text-align:right;white-space:nowrap;">${esc(d.summen.brutto)} €</td></tr>
+      </table></td></tr></table>` : '';
+
+  const kond = (d.kond.ausfuehrung || d.kond.zahlung) ? `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:22px;background:${B.SOFT};">
+      <tr><td style="padding:12px 16px;border-left:3px solid ${B.GOLD};font:400 12px ${F};color:${B.INK};line-height:1.7;">
+        ${d.kond.ausfuehrung ? `<b>Ausführungszeit:</b> ${esc(d.kond.ausfuehrung)}<br>` : ''}
+        ${d.kond.zahlung ? `<b>Zahlungsbedingungen:</b> ${esc(d.kond.zahlung)}` : ''}
+      </td></tr></table>` : '';
+
+  const gruss = `<div style="font:400 12.5px ${F};color:${B.INK};margin-top:22px;line-height:1.6;">
+      Über Ihren Auftrag freuen wir uns. Für Rückfragen stehen wir Ihnen jederzeit gern zur Verfügung.<br><br>
+      Mit freundlichen Grüßen<br><b style="color:${B.NAVY};">${B.gf}</b> · ${B.name}</div>`;
+
+  const fuss = `<div style="height:2px;background:${B.GOLD};margin-top:32px;"></div>
+    <table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:8px;"><tr>
+      <td width="34%" style="vertical-align:top;font:400 9px ${F};color:${B.MUT};line-height:1.7;">${B.name}<br>${B.strasse}<br>${B.ort}</td>
+      <td width="33%" style="vertical-align:top;font:400 9px ${F};color:${B.MUT};line-height:1.7;">Geschäftsführer: ${B.gf}<br>Steuer-Nr.: ${B.steuernr}<br>USt-IdNr.: ${B.ustid}</td>
+      <td width="33%" style="vertical-align:top;font:400 9px ${F};color:${B.MUT};line-height:1.7;">${B.bank}<br>IBAN: ${B.iban}<br>BIC: ${B.bic}</td>
+    </tr></table>`;
+
+  return `<div style="max-width:760px;margin:0 auto;background:#fff;padding:40px 44px;font-family:${F};color:${B.INK};">${kopf}${adresse}${titel}${tabelle}${summen}${kond}${gruss}${fuss}</div>`;
+}
+
+function toggleRoh() {
+  const pre = document.getElementById('ausgabe'), bv = document.getElementById('belegView'), b = document.getElementById('rohBtn');
+  if (pre.style.display === 'none') { pre.style.display = 'block'; bv.style.display = 'none'; b.textContent = '🎨 Kopfbogen anzeigen'; }
+  else { pre.style.display = 'none'; bv.style.display = 'block'; b.textContent = '🔤 Rohtext anzeigen'; }
+}
+
 function fmtBrutto(b) {
   if (b == null) return '—';
   return Number(b).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -543,6 +701,10 @@ async function generiereAngebot() {
     const dauer = ((Date.now() - start) / 1000).toFixed(1);
     letztesAngebot = data.angebot;
     document.getElementById('ausgabe').textContent = data.angebot;
+    document.getElementById('ausgabe').style.display = 'none';
+    document.getElementById('belegView').innerHTML = belegHTML(data.angebot);
+    document.getElementById('belegView').style.display = 'block';
+    document.getElementById('rohBtn').textContent = '🔤 Rohtext anzeigen';
     document.getElementById('outputMeta').textContent = `generiert in ${dauer}s`;
     const ab = document.getElementById('archivBtn');
     ab.disabled = false; ab.textContent = '💾 Ins Archiv übernehmen';
@@ -575,22 +737,24 @@ async function insArchiv() {
   }
 }
 
-/* Export PDF / Word / Kopieren */
-function exportPDF() {
-  const text = document.getElementById('ausgabe').textContent;
+/* Export PDF / Word / Kopieren — immer im Kopfbogen-Design */
+function exportPDF(text) {
+  text = text || letztesAngebot || document.getElementById('ausgabe').textContent;
   const pa = document.getElementById('printArea');
-  pa.textContent = text; pa.style.display = 'block';
+  pa.innerHTML = belegHTML(text); pa.style.display = 'block';
   window.print(); pa.style.display = 'none';
 }
-function exportWord() {
-  const text = document.getElementById('ausgabe').textContent;
+function exportWord(text) {
+  text = text || letztesAngebot || document.getElementById('ausgabe').textContent;
+  const nr = (parseAngebot(text).nummer || 'Angebot');
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="utf-8"><style>body{font-family:Courier New,monospace;font-size:11pt;line-height:1.6;margin:2cm;}pre{white-space:pre-wrap;word-break:break-word;font-family:Courier New,monospace;font-size:11pt;}</style></head>
-    <body><pre>${esc(text)}</pre></body></html>`;
+    <head><meta charset="utf-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+    <style>@page{size:A4;margin:1.6cm;} body{margin:0;} table{border-collapse:collapse;}</style></head>
+    <body>${belegHTML(text)}</body></html>`;
   const blob = new Blob(['﻿', html], { type: 'application/msword' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `Angebot_${new Date().toISOString().slice(0, 10)}.doc`;
+  a.href = url; a.download = `${nr}.doc`;
   a.click(); URL.revokeObjectURL(url);
 }
 async function kopieren() {
@@ -723,9 +887,14 @@ async function zeigeDetail(id) {
     const rows = await sb(`angebot_angebote?id=eq.${id}&select=nummer,angebotstext`);
     const a = rows[0];
     document.getElementById('modalTitle').textContent = a.nummer || 'Angebot';
+    window._detailText = a.angebotstext;
     document.getElementById('modalBody').innerHTML = `
-      <pre style="max-height:60vh;overflow:auto">${esc(a.angebotstext)}</pre>
-      <div class="btn-row"><button class="btn btn-copy" onclick="kopiereText(this)" data-text="${esc(a.angebotstext)}">📋 Kopieren</button></div>`;
+      <div class="paper" style="max-height:58vh;overflow:auto">${belegHTML(a.angebotstext)}</div>
+      <div class="btn-row">
+        <button class="btn btn-copy btn-sm" onclick="kopiereText(this)" data-text="${esc(a.angebotstext)}">📋 Kopieren</button>
+        <button class="btn btn-pdf btn-sm" onclick="exportPDF(window._detailText)">🖨️ PDF</button>
+        <button class="btn btn-word btn-sm" onclick="exportWord(window._detailText)">📝 Word</button>
+      </div>`;
     document.getElementById('modal').classList.add('visible');
   } catch (err) { setArchivStatus('error', `Detail konnte nicht geladen werden: ${err.message}`); }
 }
