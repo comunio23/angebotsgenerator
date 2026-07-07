@@ -19,8 +19,8 @@
     --danger: #d16a4f;
     --info-blue: #6fa0d6;
     --teal: #4fb3a3;
-    --text: #ede3d0;
-    --muted: #a89a80;
+    --text: #f8f2e4;
+    --muted: #c8bb9d;
     --paper: #ffffff;
     --radius: 12px;
     --shadow: 0 4px 20px rgba(0,0,0,0.35);
@@ -128,7 +128,7 @@
   }
   textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
   textarea:focus, input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,168,75,0.15); }
-  textarea::placeholder, input::placeholder { color: #6b5f4c; }
+  textarea::placeholder, input::placeholder { color: #8a7c61; }
   label.fld { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.35rem; }
   .fld-group { margin-bottom: 1rem; }
 
@@ -637,8 +637,9 @@ function toggleEdit() {
   document.getElementById('editBtn').textContent = editMode ? '✓ Fertig' : '✏️ Bearbeiten';
 }
 
-/* Kernrenderer: gebrandeter Kopfbogen. editable=true → Menge/EP/Rabatt als Eingabefelder */
-function belegHTMLFromData(d, editable) {
+/* Kernrenderer: gebrandeter Kopfbogen. editable=true → Menge/EP/Rabatt als Eingabefelder.
+   idPrefix/onchangeFn erlauben eine zweite, unabhängige Editor-Instanz (z.B. im Archiv-Modal). */
+function belegHTMLFromData(d, editable, idPrefix = '', onchangeFn = 'recompute') {
   const B = BRAND;
   const F = "'Segoe UI',Arial,sans-serif", SER = "Georgia,'Times New Roman',serif";
   const grpName = { 1: 'Material & Lieferung', 2: 'Arbeitsleistung' };
@@ -695,12 +696,12 @@ function belegHTMLFromData(d, editable) {
     const bg = i % 2 ? '#ffffff' : B.SOFT;
     const inpStyle = `width:56px;text-align:right;font:400 12px ${F};color:${B.INK};border:1px solid ${B.LINE};border-radius:4px;padding:3px 5px;background:#fff;`;
     const mengeCell = editable
-      ? `<input data-i="${i}" data-f="menge" value="${esc(p.menge)}" oninput="recompute()" style="${inpStyle}"> ${esc(p.einheit)}`
+      ? `<input data-i="${i}" data-f="menge" value="${esc(p.menge)}" oninput="${onchangeFn}()" style="${inpStyle}"> ${esc(p.einheit)}`
       : `${esc(p.menge)} ${esc(p.einheit)}`;
     const epCell = editable
-      ? `<input data-i="${i}" data-f="ep" value="${esc(p.ep)}" oninput="recompute()" style="${inpStyle}"> €`
+      ? `<input data-i="${i}" data-f="ep" value="${esc(p.ep)}" oninput="${onchangeFn}()" style="${inpStyle}"> €`
       : `${esc(p.ep)} €`;
-    const gpCell = editable ? `<span id="gp-${i}">${fmtEUR(p.gpN)} €</span>` : `${esc(p.gp)} €`;
+    const gpCell = editable ? `<span id="${idPrefix}gp-${i}">${fmtEUR(p.gpN)} €</span>` : `${esc(p.gp)} €`;
     rows += `<tr>
       <td style="padding:7px 10px;font:400 11.5px ${F};color:${B.MUT};border-bottom:1px solid ${B.LINE};background:${bg};vertical-align:top;">${esc(p.pos)}</td>
       <td style="padding:7px 10px;font:400 12.5px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};">${esc(p.text)}</td>
@@ -725,12 +726,12 @@ function belegHTMLFromData(d, editable) {
   const gVal = `padding:10px 16px 10px 20px;font:700 14px ${F};color:${B.GOLD};background:${B.NAVY};text-align:right;white-space:nowrap;`;
   let summenRows = '';
   if (editable) {
-    const rabInp = `<input id="rabattInput" value="${d.rabattProzent || 0}" oninput="recompute()" style="width:44px;text-align:right;font:400 12px ${F};border:1px solid ${B.LINE};border-radius:4px;padding:2px 5px;"> %`;
+    const rabInp = `<input id="${idPrefix}rabattInput" value="${d.rabattProzent || 0}" oninput="${onchangeFn}()" style="width:44px;text-align:right;font:400 12px ${F};border:1px solid ${B.LINE};border-radius:4px;padding:2px 5px;"> %`;
     summenRows =
-      `<tr><td style="${lblSt}">Zwischensumme netto</td><td align="right" style="${valSt}"><span id="t-netto">${fmtEUR(d.nettoSum)} €</span></td></tr>
-       <tr><td style="${lblSt}">Rabatt ${rabInp}</td><td align="right" style="${valSt}color:${B.GOLDD};"><span id="t-rabatt">-${fmtEUR(d.rabattBetrag)} €</span></td></tr>
-       <tr><td style="${lblSt}">zzgl. ${d.mwstProzN} % MwSt.</td><td align="right" style="${valSt}"><span id="t-mwst">${fmtEUR(d.mwstBetrag)} €</span></td></tr>
-       <tr><td style="${gLbl}">Gesamtbetrag</td><td style="${gVal}"><span id="t-brutto">${fmtEUR(d.bruttoN)} €</span></td></tr>`;
+      `<tr><td style="${lblSt}">Zwischensumme netto</td><td align="right" style="${valSt}"><span id="${idPrefix}t-netto">${fmtEUR(d.nettoSum)} €</span></td></tr>
+       <tr><td style="${lblSt}">Rabatt ${rabInp}</td><td align="right" style="${valSt}color:${B.GOLDD};"><span id="${idPrefix}t-rabatt">-${fmtEUR(d.rabattBetrag)} €</span></td></tr>
+       <tr><td style="${lblSt}">zzgl. ${d.mwstProzN} % MwSt.</td><td align="right" style="${valSt}"><span id="${idPrefix}t-mwst">${fmtEUR(d.mwstBetrag)} €</span></td></tr>
+       <tr><td style="${gLbl}">Gesamtbetrag</td><td style="${gVal}"><span id="${idPrefix}t-brutto">${fmtEUR(d.bruttoN)} €</span></td></tr>`;
   } else if (d.summen) {
     const rabRows = d.rabatt
       ? `<tr><td style="${lblSt}">Zwischensumme netto</td><td align="right" style="${valSt}">${esc(d.rabatt.netto)} €</td></tr>
@@ -1075,21 +1076,80 @@ function renderArchiv() {
       <button class="btn btn-del" onclick="event.stopPropagation();loescheAngebot('${a.id}','${esc(a.nummer)}')">🗑️</button>
     </div>`).join('');
 }
+/* Archiv-Detail: eigener, unabhängiger Editor (Präfix 'm-') — funktioniert für JEDES Angebot
+   im Archiv, unabhängig von der Quelle (Muster/generiert/manuell/akzeptiert/Telegram). */
+let modalEntwurf = null, modalEditMode = false, modalRowId = null;
+
 async function zeigeDetail(id) {
   try {
     const rows = await sb(`angebot_angebote?id=eq.${id}&select=nummer,angebotstext`);
     const a = rows[0];
     document.getElementById('modalTitle').textContent = a.nummer || 'Angebot';
-    window._detailText = a.angebotstext;
+    modalRowId = id;
+    modalEntwurf = parseAngebotVoll(a.angebotstext);
+    modalEditMode = false;
     document.getElementById('modalBody').innerHTML = `
-      <div class="paper" style="max-height:58vh;overflow:auto">${belegHTML(a.angebotstext)}</div>
+      <div id="modalBelegView" class="paper" style="max-height:58vh;overflow:auto">${belegHTMLFromData(modalEntwurf, false, 'm-', 'modalRecompute')}</div>
       <div class="btn-row">
+        <button class="btn btn-edit btn-sm" id="modalEditBtn" onclick="modalToggleEdit()">✏️ Bearbeiten</button>
+        <button class="btn btn-save btn-sm" onclick="modalSpeichern(this)">💾 Änderungen speichern</button>
         <button class="btn btn-copy btn-sm" onclick="kopiereText(this)" data-text="${esc(a.angebotstext)}">📋 Kopieren</button>
-        <button class="btn btn-pdf btn-sm" onclick="exportPDF(window._detailText)">🖨️ PDF</button>
-        <button class="btn btn-word btn-sm" onclick="exportWord(window._detailText)">📝 Word</button>
+        <button class="btn btn-pdf btn-sm" onclick="exportPDF(modalAktuellerText())">🖨️ PDF</button>
+        <button class="btn btn-word btn-sm" onclick="exportWord(modalAktuellerText())">📝 Word</button>
       </div>`;
     document.getElementById('modal').classList.add('visible');
   } catch (err) { setArchivStatus('error', `Detail konnte nicht geladen werden: ${err.message}`); }
+}
+
+function modalAktuellerText() {
+  if (!modalEntwurf) return '';
+  document.querySelectorAll('#modalBelegView input[data-i]').forEach(inp => { modalEntwurf.positionen[+inp.dataset.i][inp.dataset.f] = inp.value; });
+  const rin = document.getElementById('m-rabattInput');
+  if (rin) modalEntwurf.rabattProzent = deNum(rin.value);
+  return entwurfZuText(modalEntwurf);
+}
+
+function modalRecompute() {
+  if (!modalEntwurf) return;
+  document.querySelectorAll('#modalBelegView input[data-i]').forEach(inp => { modalEntwurf.positionen[+inp.dataset.i][inp.dataset.f] = inp.value; });
+  const rin = document.getElementById('m-rabattInput');
+  if (rin) modalEntwurf.rabattProzent = deNum(rin.value);
+  berechne(modalEntwurf);
+  modalEntwurf.positionen.forEach((p, i) => { const c = document.getElementById('m-gp-' + i); if (c) c.textContent = fmtEUR(p.gpN) + ' €'; });
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('m-t-netto', fmtEUR(modalEntwurf.nettoSum) + ' €');
+  set('m-t-rabatt', '-' + fmtEUR(modalEntwurf.rabattBetrag) + ' €');
+  set('m-t-mwst', fmtEUR(modalEntwurf.mwstBetrag) + ' €');
+  set('m-t-brutto', fmtEUR(modalEntwurf.bruttoN) + ' €');
+}
+
+function modalToggleEdit() {
+  if (!modalEntwurf) return;
+  if (modalEditMode) modalAktuellerText(); // aktuelle Eingaben ins Objekt übernehmen
+  modalEditMode = !modalEditMode;
+  document.getElementById('modalBelegView').innerHTML = belegHTMLFromData(modalEntwurf, modalEditMode, 'm-', 'modalRecompute');
+  document.getElementById('modalEditBtn').textContent = modalEditMode ? '✓ Fertig' : '✏️ Bearbeiten';
+}
+
+async function modalSpeichern(btn) {
+  if (!modalRowId || !modalEntwurf) return;
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Speichern …';
+  try {
+    const text = modalAktuellerText();
+    const p = parseAngebot(text);
+    await sb(`angebot_angebote?id=eq.${modalRowId}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ ...p, angebotstext: text }),
+    });
+    btn.textContent = '✅ Gespeichert';
+    const idx = archivDaten.findIndex(a => a.id === modalRowId);
+    if (idx > -1) { archivDaten[idx] = { ...archivDaten[idx], ...p }; renderArchiv(); }
+    setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1800);
+  } catch (err) {
+    btn.disabled = false; btn.textContent = original;
+    setArchivStatus('error', `Speichern fehlgeschlagen: ${err.message}`);
+  }
 }
 async function kopiereText(btn) {
   try { await navigator.clipboard.writeText(btn.dataset.text); btn.textContent = '✅ Kopiert!'; }
