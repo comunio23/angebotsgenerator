@@ -143,6 +143,8 @@
   .btn-email:hover { background: #0c5d56; }
   .btn-save { background: var(--dark); color: #fff; }
   .btn-save:hover { background: #2d3548; }
+  .btn-edit { background: #fff; color: var(--accent-dark, #92670a); border: 1.5px solid var(--accent); }
+  .btn-edit:hover { background: #fffdf5; }
   .btn-mic {
     background: var(--bg); color: var(--muted); border: 1.5px solid var(--border);
     width: 44px; height: 44px; padding: 0; justify-content: center; font-size: 1.2rem; border-radius: 8px;
@@ -320,6 +322,7 @@
           <div class="card-label">📄 Generiertes Angebot</div>
           <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
             <span class="output-meta" id="outputMeta"></span>
+            <button class="btn btn-edit btn-sm" id="editBtn" onclick="toggleEdit()">✏️ Bearbeiten</button>
             <button class="btn btn-save btn-sm" id="akzeptBtn" onclick="akzeptiere()">✓ Angebot akzeptieren</button>
             <button class="btn btn-email btn-sm" onclick="emailModal()">📧 Per E-Mail</button>
             <button class="btn btn-copy btn-sm" id="copyBtn" onclick="kopieren()">📋 Kopieren</button>
@@ -584,6 +587,16 @@ function recompute() {
 /* Kopfbogen aus Text (Anzeige/Export, nicht editierbar) */
 function belegHTML(text) { return belegHTMLFromData(parseAngebotVoll(text), false); }
 
+/* Bearbeiten-Umschalter: sammelt vor dem Wechsel die aktuellen Werte, rendert dann neu */
+let editMode = false;
+function toggleEdit() {
+  if (!entwurf) return;
+  if (editMode) { sammleEntwurfText(); } // aktuelle Eingaben ins entwurf-Objekt übernehmen
+  editMode = !editMode;
+  document.getElementById('belegView').innerHTML = belegHTMLFromData(entwurf, editMode);
+  document.getElementById('editBtn').textContent = editMode ? '✓ Fertig' : '✏️ Bearbeiten';
+}
+
 /* Kernrenderer: gebrandeter Kopfbogen. editable=true → Menge/EP/Rabatt als Eingabefelder */
 function belegHTMLFromData(d, editable) {
   const B = BRAND;
@@ -808,16 +821,18 @@ async function generiereAngebot() {
     letztesAngebot = data.angebot;
     entwurf = parseAngebotVoll(data.angebot);
     entwurf.rabattProzent = 0;
+    editMode = false;
     document.getElementById('ausgabe').textContent = data.angebot;
     document.getElementById('ausgabe').style.display = 'none';
-    document.getElementById('belegView').innerHTML = belegHTMLFromData(entwurf, true);
+    document.getElementById('belegView').innerHTML = belegHTMLFromData(entwurf, false);
     document.getElementById('belegView').style.display = 'block';
     document.getElementById('rohBtn').textContent = '🔤 Rohtext anzeigen';
+    document.getElementById('editBtn').textContent = '✏️ Bearbeiten';
     document.getElementById('outputMeta').textContent = `generiert in ${dauer}s`;
     const ab = document.getElementById('akzeptBtn');
     ab.disabled = false; ab.textContent = '✓ Angebot akzeptieren';
     document.getElementById('outputArea').classList.add('visible');
-    setStatus('success', `Angebot erfolgreich generiert (${dauer} s). Mengen, Einzelpreise und Rabatt sind editierbar — dann akzeptieren, senden oder exportieren.`);
+    setStatus('success', `Angebot erfolgreich generiert (${dauer} s). Auf "Bearbeiten" klicken, um Mengen, Preise oder Rabatt anzupassen.`);
     document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
     setStatus('error', `Verbindungsfehler: ${err.message}`);
