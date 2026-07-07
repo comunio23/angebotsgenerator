@@ -139,6 +139,8 @@
   .btn-pdf:hover { background: #a93226; }
   .btn-word { background: var(--blue); color: #fff; }
   .btn-word:hover { background: #1d4ed8; }
+  .btn-email { background: #0f766e; color: #fff; }
+  .btn-email:hover { background: #0c5d56; }
   .btn-save { background: var(--dark); color: #fff; }
   .btn-save:hover { background: #2d3548; }
   .btn-mic {
@@ -208,6 +210,7 @@
   .badge-muster { background: #eef1f6; color: #64748b; }
   .badge-generiert { background: rgba(200,168,75,0.2); color: #97781f; }
   .badge-manuell { background: #e0ecff; color: #1d4ed8; }
+  .badge-akzeptiert { background: #d1f0e2; color: #0f766e; }
   @media (max-width: 620px) {
     .ang-row { grid-template-columns: 1fr auto; }
     .ang-badge-cell { grid-row: 1; grid-column: 2; }
@@ -317,7 +320,8 @@
           <div class="card-label">📄 Generiertes Angebot</div>
           <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
             <span class="output-meta" id="outputMeta"></span>
-            <button class="btn btn-save btn-sm" id="archivBtn" onclick="insArchiv()">💾 Ins Archiv übernehmen</button>
+            <button class="btn btn-save btn-sm" id="akzeptBtn" onclick="akzeptiere()">✓ Angebot akzeptieren</button>
+            <button class="btn btn-email btn-sm" onclick="emailModal()">📧 Per E-Mail</button>
             <button class="btn btn-copy btn-sm" id="copyBtn" onclick="kopieren()">📋 Kopieren</button>
             <button class="btn btn-pdf btn-sm" onclick="exportPDF()">🖨️ PDF</button>
             <button class="btn btn-word btn-sm" onclick="exportWord()">📝 Word</button>
@@ -497,19 +501,95 @@ function parseAngebotVoll(text) {
   }
   const t = text.match(/NETTO:\s*([\d.,]+)\s*€\s*\|\s*MwSt\.?\s*(\d+)\s*%:\s*([\d.,]+)\s*€\s*\|\s*BRUTTO:\s*([\d.,]+)\s*€/);
   const summen = t ? { netto: t[1], mwstProz: t[2], mwst: t[3], brutto: t[4] } : null;
+  const zw = text.match(/Zwischensumme:\s*([\d.,]+)\s*€\s*\|\s*Rabatt\s*([\d.,]+)\s*%:\s*-?([\d.,]+)\s*€/);
+  const rabatt = zw ? { netto: zw[1], proz: zw[2], betrag: zw[3] } : null;
   const c = text.match(/Ausführung:\s*([^|\n]+?)\s*(?:\|\s*Zahlung:\s*(.+))?$/m);
   const kond = { ausfuehrung: c ? c[1].trim() : '', zahlung: c && c[2] ? c[2].trim() : '' };
   return {
     nummer: h ? h[1] : '—', datum: h ? h[2] : '', gueltig: h ? (h[3] || '') : '',
-    kunde, kundenNr: kundenNr(kunde.name), projekt, positionen, summen, kond, roh: text,
+    kundeRaw, kunde, kundenNr: kundenNr(kunde.name), projekt, positionen, summen, rabatt, kond, roh: text,
+    rabattProzent: rabatt ? parseFloat(String(rabatt.proz).replace(',', '.')) || 0 : 0,
   };
 }
 
-/* Erzeugt den gebrandeten Kopfbogen als HTML (Inline-Styles → identisch in App, PDF, Word) */
-function belegHTML(text) {
-  const d = parseAngebotVoll(text), B = BRAND;
+/* Deutsche Zahl (String) → Number; robust gegen Tausenderpunkt und Komma/Punkt */
+function deNum(s) {
+  if (typeof s === 'number') return s;
+  let x = String(s).trim().replace(/[\s€]/g, '');
+  if (x.includes(',')) x = x.replace(/\./g, '').replace(',', '.');
+  return parseFloat(x) || 0;
+}
+const fmtEUR = n => Number(n).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtMenge = n => Number(n).toLocaleString('de-DE', { maximumFractionDigits: 2 });
+
+/* Positions- und Summenberechnung inkl. Rabatt (mutiert d) */
+function berechne(d) {
+  let netto = 0;
+  d.positionen.forEach(p => { p.epN = deNum(p.ep); p.mengeN = deNum(p.menge); p.gpN = p.mengeN * p.epN; netto += p.gpN; });
+  d.nettoSum = netto;
+  const r = Number(d.rabattProzent) || 0; d.rabattProzent = r;
+  d.rabattBetrag = netto * r / 100;
+  d.nettoNach = netto - d.rabattBetrag;
+  d.mwstProzN = d.summen ? deNum(d.summen.mwstProz) : 19;
+  d.mwstBetrag = d.nettoNach * d.mwstProzN / 100;
+  d.bruttoN = d.nettoNach + d.mwstBetrag;
+}
+
+/* Bearbeiteten Entwurf zurück in das Standard-Textformat schreiben (für Speichern/Export/Reparse) */
+function entwurfZuText(d) {
+  berechne(d); const B = BRAND;
+  const sep = '='.repeat(80), dash = '-'.repeat(80), L = [];
+  L.push(sep);
+  L.push(`ANGEBOT  ${d.nummer}  |  ${d.datum || ''}${d.gueltig ? `  |  Gültig bis: ${d.gueltig}` : ''}`);
+  L.push(sep, '');
+  L.push(B.name, `${B.gf}, Fliesenlegermeister`, `${B.strasse} | ${B.ort}`, `Tel: ${B.tel} | ${B.mail}`, `Steuernr.: ${B.steuernr} | USt-IdNr.: ${B.ustid}`, '');
+  L.push(dash);
+  L.push(`Auftraggeber : ${d.kundeRaw || ''}`);
+  L.push(`Projekt      : ${d.projekt || ''}`, '');
+  d.positionen.forEach(p => {
+    L.push(` ${p.pos}  ${p.text}   ${fmtMenge(p.mengeN)} ${p.einheit}   × ${fmtEUR(p.epN)} €  =  ${fmtEUR(p.gpN)} €`);
+  });
+  L.push('');
+  if (d.rabattProzent > 0) L.push(`Zwischensumme: ${fmtEUR(d.nettoSum)} €  |  Rabatt ${d.rabattProzent}%: -${fmtEUR(d.rabattBetrag)} €`);
+  L.push(`NETTO: ${fmtEUR(d.nettoNach)} €  |  MwSt. ${d.mwstProzN}%: ${fmtEUR(d.mwstBetrag)} €  |  BRUTTO: ${fmtEUR(d.bruttoN)} €`);
+  if (d.kond && (d.kond.ausfuehrung || d.kond.zahlung)) L.push(`Ausführung: ${d.kond.ausfuehrung || ''}${d.kond.zahlung ? `  |  Zahlung: ${d.kond.zahlung}` : ''}`);
+  L.push(sep);
+  return L.join('\n');
+}
+
+/* Aktuellen (ggf. editierten) Entwurf aus dem DOM einsammeln → Text */
+function sammleEntwurfText() {
+  if (!entwurf) return letztesAngebot;
+  document.querySelectorAll('#belegView input[data-i]').forEach(inp => { entwurf.positionen[+inp.dataset.i][inp.dataset.f] = inp.value; });
+  const rin = document.getElementById('rabattInput');
+  if (rin) entwurf.rabattProzent = deNum(rin.value);
+  return entwurfZuText(entwurf);
+}
+
+/* Live-Neuberechnung der Beträge im editierbaren Entwurf */
+function recompute() {
+  if (!entwurf) return;
+  document.querySelectorAll('#belegView input[data-i]').forEach(inp => { entwurf.positionen[+inp.dataset.i][inp.dataset.f] = inp.value; });
+  const rin = document.getElementById('rabattInput');
+  if (rin) entwurf.rabattProzent = deNum(rin.value);
+  berechne(entwurf);
+  entwurf.positionen.forEach((p, i) => { const c = document.getElementById('gp-' + i); if (c) c.textContent = fmtEUR(p.gpN) + ' €'; });
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('t-netto', fmtEUR(entwurf.nettoSum) + ' €');
+  set('t-rabatt', '-' + fmtEUR(entwurf.rabattBetrag) + ' €');
+  set('t-mwst', fmtEUR(entwurf.mwstBetrag) + ' €');
+  set('t-brutto', fmtEUR(entwurf.bruttoN) + ' €');
+}
+
+/* Kopfbogen aus Text (Anzeige/Export, nicht editierbar) */
+function belegHTML(text) { return belegHTMLFromData(parseAngebotVoll(text), false); }
+
+/* Kernrenderer: gebrandeter Kopfbogen. editable=true → Menge/EP/Rabatt als Eingabefelder */
+function belegHTMLFromData(d, editable) {
+  const B = BRAND;
   const F = "'Segoe UI',Arial,sans-serif", SER = "Georgia,'Times New Roman',serif";
   const grpName = { 1: 'Material & Lieferung', 2: 'Arbeitsleistung' };
+  if (editable) berechne(d);
 
   const logo = `<table cellspacing="3" cellpadding="0" style="border-collapse:separate;background:${B.NAVY};">
     <tr><td width="18" height="18" bgcolor="${B.GOLD}"></td><td width="18" height="18" bgcolor="${B.NAVY2}"></td></tr>
@@ -560,12 +640,20 @@ function belegHTML(text) {
       rows += `<tr><td colspan="5" style="padding:15px 10px 6px;font:700 10.5px ${F};letter-spacing:1px;text-transform:uppercase;color:${B.GOLDD};border-bottom:2px solid ${B.GOLD};">${esc(grpName[p.grp] || 'Weitere Leistungen')}</td></tr>`;
     }
     const bg = i % 2 ? '#ffffff' : B.SOFT;
+    const inpStyle = `width:56px;text-align:right;font:400 12px ${F};color:${B.INK};border:1px solid ${B.LINE};border-radius:4px;padding:3px 5px;background:#fff;`;
+    const mengeCell = editable
+      ? `<input data-i="${i}" data-f="menge" value="${esc(p.menge)}" oninput="recompute()" style="${inpStyle}"> ${esc(p.einheit)}`
+      : `${esc(p.menge)} ${esc(p.einheit)}`;
+    const epCell = editable
+      ? `<input data-i="${i}" data-f="ep" value="${esc(p.ep)}" oninput="recompute()" style="${inpStyle}"> €`
+      : `${esc(p.ep)} €`;
+    const gpCell = editable ? `<span id="gp-${i}">${fmtEUR(p.gpN)} €</span>` : `${esc(p.gp)} €`;
     rows += `<tr>
       <td style="padding:7px 10px;font:400 11.5px ${F};color:${B.MUT};border-bottom:1px solid ${B.LINE};background:${bg};vertical-align:top;">${esc(p.pos)}</td>
       <td style="padding:7px 10px;font:400 12.5px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};">${esc(p.text)}</td>
-      <td align="right" style="padding:7px 10px;font:400 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;">${esc(p.menge)} ${esc(p.einheit)}</td>
-      <td align="right" style="padding:7px 10px;font:400 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;">${esc(p.ep)} €</td>
-      <td align="right" style="padding:7px 10px;font:600 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;">${esc(p.gp)} €</td>
+      <td align="right" style="padding:7px 10px;font:400 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;vertical-align:middle;">${mengeCell}</td>
+      <td align="right" style="padding:7px 10px;font:400 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;vertical-align:middle;">${epCell}</td>
+      <td align="right" style="padding:7px 10px;font:600 12px ${F};color:${B.INK};border-bottom:1px solid ${B.LINE};background:${bg};white-space:nowrap;">${gpCell}</td>
     </tr>`;
   });
 
@@ -578,15 +666,30 @@ function belegHTML(text) {
       ${rows}</table>`
     : `<pre style="white-space:pre-wrap;word-break:break-word;font:12px 'Consolas',monospace;color:${B.INK};background:${B.SOFT};padding:16px;border:1px solid ${B.LINE};margin-top:20px;">${esc(d.roh)}</pre>`;
 
-  const summen = d.summen ? `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:16px;"><tr><td align="right">
-      <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
-        <tr><td style="padding:5px 20px 5px 0;font:400 12.5px ${F};color:${B.MUT};text-align:right;">Zwischensumme netto</td>
-            <td align="right" style="padding:5px 0;font:400 12.5px ${F};color:${B.INK};white-space:nowrap;">${esc(d.summen.netto)} €</td></tr>
-        <tr><td style="padding:5px 20px 5px 0;font:400 12.5px ${F};color:${B.MUT};text-align:right;">zzgl. ${esc(d.summen.mwstProz)} % MwSt.</td>
-            <td align="right" style="padding:5px 0;font:400 12.5px ${F};color:${B.INK};white-space:nowrap;">${esc(d.summen.mwst)} €</td></tr>
-        <tr><td style="padding:10px 20px 10px 26px;font:700 14px ${F};color:#fff;background:${B.NAVY};text-align:right;">Gesamtbetrag</td>
-            <td style="padding:10px 16px 10px 20px;font:700 14px ${F};color:${B.GOLD};background:${B.NAVY};text-align:right;white-space:nowrap;">${esc(d.summen.brutto)} €</td></tr>
-      </table></td></tr></table>` : '';
+  const lblSt = `padding:5px 20px 5px 0;font:400 12.5px ${F};color:${B.MUT};text-align:right;`;
+  const valSt = `padding:5px 0;font:400 12.5px ${F};color:${B.INK};white-space:nowrap;`;
+  const gLbl = `padding:10px 20px 10px 26px;font:700 14px ${F};color:#fff;background:${B.NAVY};text-align:right;`;
+  const gVal = `padding:10px 16px 10px 20px;font:700 14px ${F};color:${B.GOLD};background:${B.NAVY};text-align:right;white-space:nowrap;`;
+  let summenRows = '';
+  if (editable) {
+    const rabInp = `<input id="rabattInput" value="${d.rabattProzent || 0}" oninput="recompute()" style="width:44px;text-align:right;font:400 12px ${F};border:1px solid ${B.LINE};border-radius:4px;padding:2px 5px;"> %`;
+    summenRows =
+      `<tr><td style="${lblSt}">Zwischensumme netto</td><td align="right" style="${valSt}"><span id="t-netto">${fmtEUR(d.nettoSum)} €</span></td></tr>
+       <tr><td style="${lblSt}">Rabatt ${rabInp}</td><td align="right" style="${valSt}color:${B.GOLDD};"><span id="t-rabatt">-${fmtEUR(d.rabattBetrag)} €</span></td></tr>
+       <tr><td style="${lblSt}">zzgl. ${d.mwstProzN} % MwSt.</td><td align="right" style="${valSt}"><span id="t-mwst">${fmtEUR(d.mwstBetrag)} €</span></td></tr>
+       <tr><td style="${gLbl}">Gesamtbetrag</td><td style="${gVal}"><span id="t-brutto">${fmtEUR(d.bruttoN)} €</span></td></tr>`;
+  } else if (d.summen) {
+    const rabRows = d.rabatt
+      ? `<tr><td style="${lblSt}">Zwischensumme netto</td><td align="right" style="${valSt}">${esc(d.rabatt.netto)} €</td></tr>
+         <tr><td style="${lblSt}">Rabatt ${esc(d.rabatt.proz)} %</td><td align="right" style="${valSt}color:${B.GOLDD};">-${esc(d.rabatt.betrag)} €</td></tr>
+         <tr><td style="${lblSt}">Nettobetrag</td><td align="right" style="${valSt}">${esc(d.summen.netto)} €</td></tr>`
+      : `<tr><td style="${lblSt}">Zwischensumme netto</td><td align="right" style="${valSt}">${esc(d.summen.netto)} €</td></tr>`;
+    summenRows = rabRows +
+      `<tr><td style="${lblSt}">zzgl. ${esc(d.summen.mwstProz)} % MwSt.</td><td align="right" style="${valSt}">${esc(d.summen.mwst)} €</td></tr>
+       <tr><td style="${gLbl}">Gesamtbetrag</td><td style="${gVal}">${esc(d.summen.brutto)} €</td></tr>`;
+  }
+  const summen = summenRows ? `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:16px;"><tr><td align="right">
+      <table cellspacing="0" cellpadding="0" style="border-collapse:collapse;">${summenRows}</table></td></tr></table>` : '';
 
   const kond = (d.kond.ausfuehrung || d.kond.zahlung) ? `<table width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:22px;background:${B.SOFT};">
       <tr><td style="padding:12px 16px;border-left:3px solid ${B.GOLD};font:400 12px ${F};color:${B.INK};line-height:1.7;">
@@ -610,8 +713,10 @@ function belegHTML(text) {
 
 function toggleRoh() {
   const pre = document.getElementById('ausgabe'), bv = document.getElementById('belegView'), b = document.getElementById('rohBtn');
-  if (pre.style.display === 'none') { pre.style.display = 'block'; bv.style.display = 'none'; b.textContent = '🎨 Kopfbogen anzeigen'; }
-  else { pre.style.display = 'none'; bv.style.display = 'block'; b.textContent = '🔤 Rohtext anzeigen'; }
+  if (pre.style.display === 'none') {
+    pre.textContent = sammleEntwurfText();
+    pre.style.display = 'block'; bv.style.display = 'none'; b.textContent = '🎨 Kopfbogen anzeigen';
+  } else { pre.style.display = 'none'; bv.style.display = 'block'; b.textContent = '🔤 Rohtext anzeigen'; }
 }
 
 function fmtBrutto(b) {
@@ -678,6 +783,7 @@ function setStatus(typ, text) {
 }
 
 let letztesAngebot = '';
+let entwurf = null;
 
 async function generiereAngebot() {
   const anfrage = document.getElementById('anfrage').value.trim();
@@ -700,16 +806,18 @@ async function generiereAngebot() {
 
     const dauer = ((Date.now() - start) / 1000).toFixed(1);
     letztesAngebot = data.angebot;
+    entwurf = parseAngebotVoll(data.angebot);
+    entwurf.rabattProzent = 0;
     document.getElementById('ausgabe').textContent = data.angebot;
     document.getElementById('ausgabe').style.display = 'none';
-    document.getElementById('belegView').innerHTML = belegHTML(data.angebot);
+    document.getElementById('belegView').innerHTML = belegHTMLFromData(entwurf, true);
     document.getElementById('belegView').style.display = 'block';
     document.getElementById('rohBtn').textContent = '🔤 Rohtext anzeigen';
     document.getElementById('outputMeta').textContent = `generiert in ${dauer}s`;
-    const ab = document.getElementById('archivBtn');
-    ab.disabled = false; ab.textContent = '💾 Ins Archiv übernehmen';
+    const ab = document.getElementById('akzeptBtn');
+    ab.disabled = false; ab.textContent = '✓ Angebot akzeptieren';
     document.getElementById('outputArea').classList.add('visible');
-    setStatus('success', `Angebot erfolgreich generiert (${dauer} s). Prüfen, ins Archiv übernehmen oder exportieren.`);
+    setStatus('success', `Angebot erfolgreich generiert (${dauer} s). Mengen, Einzelpreise und Rabatt sind editierbar — dann akzeptieren, senden oder exportieren.`);
     document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (err) {
     setStatus('error', `Verbindungsfehler: ${err.message}`);
@@ -719,33 +827,63 @@ async function generiereAngebot() {
   }
 }
 
-async function insArchiv() {
-  if (!letztesAngebot) return;
-  const btn = document.getElementById('archivBtn');
+/* Akzeptieren: bearbeiteten Entwurf als 'akzeptiert' in die Datenquelle übernehmen */
+async function akzeptiere() {
+  if (!entwurf) return;
+  const btn = document.getElementById('akzeptBtn');
   btn.disabled = true; btn.textContent = '⏳ Speichern …';
   try {
-    const p = parseAngebot(letztesAngebot);
+    const text = sammleEntwurfText();
+    const p = parseAngebot(text);
     await sb('angebot_angebote', {
       method: 'POST', headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ ...p, angebotstext: letztesAngebot, quelle: 'generiert' }),
+      body: JSON.stringify({ ...p, angebotstext: text, quelle: 'akzeptiert' }),
     });
-    btn.textContent = '✓ Gespeichert';
-    setStatus('success', `Angebot ${p.nummer || ''} wurde ins Archiv übernommen.`);
+    letztesAngebot = text;
+    btn.textContent = '✓ Akzeptiert & gespeichert';
+    setStatus('success', `Angebot ${p.nummer || ''} akzeptiert — fließt ab jetzt als Referenz in neue Angebote ein.`);
   } catch (err) {
-    btn.disabled = false; btn.textContent = '💾 Ins Archiv übernehmen';
+    btn.disabled = false; btn.textContent = '✓ Angebot akzeptieren';
     setStatus('error', `Speichern fehlgeschlagen: ${err.message}`);
   }
 }
 
-/* Export PDF / Word / Kopieren — immer im Kopfbogen-Design */
+/* Per E-Mail versenden — exemplarisch über das Standard-Mailprogramm (mailto) */
+function emailModal() {
+  const text = sammleEntwurfText();
+  const p = parseAngebot(text);
+  document.getElementById('modalTitle').textContent = 'Angebot per E-Mail versenden';
+  const p2 = parseAngebotVoll(text);
+  document.getElementById('modalBody').innerHTML = `
+    <div class="fld-group"><label class="fld">Empfänger-E-Mail</label>
+      <input type="text" id="mailTo" placeholder="kunde@beispiel.de"></div>
+    <div class="fld-group"><label class="fld">Betreff</label>
+      <input type="text" id="mailBetreff" value="${esc('Ihr Angebot ' + (p.nummer || '') + ' – ' + BRAND.name)}"></div>
+    <p class="hint" style="margin-bottom:0.75rem"><b>So läuft es in der Demo:</b> Zuerst „PDF erzeugen" (lädt das Angebot als Datei herunter), dann „Mail-Programm öffnen" — es öffnet sich eine vorbereitete E-Mail mit kurzem Anschreiben. Die heruntergeladene PDF hängen Sie mit einem Klick an.</p>
+    <div class="btn-row">
+      <button class="btn btn-pdf btn-sm" onclick="exportPDF(window._mailText)">🖨️ PDF erzeugen</button>
+      <button class="btn btn-email btn-sm" onclick="mailtoSenden()">📧 Mail-Programm öffnen</button>
+    </div>`;
+  window._mailText = text;
+  window._mailNr = p2.nummer;
+  document.getElementById('modal').classList.add('visible');
+}
+function mailtoSenden() {
+  const to = (document.getElementById('mailTo').value || '').trim();
+  const betreff = document.getElementById('mailBetreff').value || '';
+  const koerper = `Sehr geehrte Damen und Herren,\n\nvielen Dank für Ihre Anfrage. Anbei erhalten Sie unser Angebot ${window._mailNr || ''} als PDF im Anhang.\n\nFür Rückfragen stehen wir Ihnen gern zur Verfügung.\n\nMit freundlichen Grüßen\n${BRAND.gf}\n${BRAND.name}\n${BRAND.tel} · ${BRAND.mail}`;
+  window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(betreff)}&body=${encodeURIComponent(koerper)}`;
+}
+
+/* Export PDF / Word / Kopieren — immer im Kopfbogen-Design, mit übernommenen Änderungen */
 function exportPDF(text) {
-  text = text || letztesAngebot || document.getElementById('ausgabe').textContent;
+  text = text || sammleEntwurfText();
   const pa = document.getElementById('printArea');
   pa.innerHTML = belegHTML(text); pa.style.display = 'block';
   window.print(); pa.style.display = 'none';
 }
 function exportWord(text) {
-  text = text || letztesAngebot || document.getElementById('ausgabe').textContent;
+  text = text || sammleEntwurfText();
   const nr = (parseAngebot(text).nummer || 'Angebot');
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
     <head><meta charset="utf-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
@@ -760,7 +898,7 @@ function exportWord(text) {
 async function kopieren() {
   const btn = document.getElementById('copyBtn');
   try {
-    await navigator.clipboard.writeText(document.getElementById('ausgabe').textContent);
+    await navigator.clipboard.writeText(sammleEntwurfText());
     btn.textContent = '✅ Kopiert!'; btn.classList.add('copy-success');
     setTimeout(() => { btn.textContent = '📋 Kopieren'; btn.classList.remove('copy-success'); }, 2000);
   } catch { btn.textContent = '❌ Fehler'; setTimeout(() => { btn.textContent = '📋 Kopieren'; }, 2000); }
