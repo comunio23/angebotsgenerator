@@ -6,6 +6,11 @@
   to = "/.netlify/functions/angebot"
   status = 200
 
+[[redirects]]
+  from = "/api/angebot-chat"
+  to = "/.netlify/functions/angebot-chat"
+  status = 200
+
 [[headers]]
   for = "/api/*"
   [headers.values]

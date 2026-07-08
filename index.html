@@ -197,6 +197,28 @@
   .status-bar.success { border-left-color: var(--moss); color: #a4d6ae; }
 
   .output-area { display: none; }
+
+  .chat-verlauf {
+    max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem;
+    margin-bottom: 0.75rem; padding-right: 4px;
+  }
+  .chat-verlauf:empty::after {
+    content: "Noch keine Fragen gestellt."; color: var(--muted); font-size: 0.85rem; font-style: italic;
+  }
+  .chat-bubble {
+    max-width: 85%; padding: 0.6rem 0.85rem; border-radius: 10px; font-size: 0.88rem; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .chat-bubble.user {
+    align-self: flex-end; background: var(--gold); color: #241a08; border-bottom-right-radius: 2px;
+  }
+  .chat-bubble.assistant {
+    align-self: flex-start; background: var(--panel2); border: 1px solid var(--line);
+    color: var(--text); border-bottom-left-radius: 2px;
+  }
+  .chat-bubble.error { border-color: var(--danger); color: #eba58f; }
+  .chat-eingabe { display: flex; gap: 0.5rem; }
+  .chat-eingabe input { flex: 1; }
   .output-area.visible { display: block; animation: fadeUp 0.3s ease; }
   .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
   .output-meta { font-size: 0.78rem; color: var(--muted); }
@@ -401,6 +423,17 @@
     </div>
 
     <div class="status-bar" id="archivStatus"><span id="archivStatusIcon"></span><span id="archivStatusText"></span></div>
+
+    <div class="card" id="chatCard">
+      <div class="card-label">💬 Mit dem Archiv chatten</div>
+      <p style="color:var(--muted);font-size:0.85rem;margin:0 0 0.75rem;">Frag z. B. „Wie viele Angebote haben wir 2025 geschrieben?", „Welches war das teuerste Angebot?" oder „Zeig mir alle Angebote für Kunde Müller".</p>
+      <div id="chatVerlauf" class="chat-verlauf"></div>
+      <div class="chat-eingabe">
+        <input type="text" id="chatFrage" placeholder="Frage zum Archiv stellen …" onkeydown="if(event.key==='Enter'){chatSenden();}">
+        <button class="btn btn-primary btn-sm" id="chatSendBtn" onclick="chatSenden()">Senden</button>
+      </div>
+    </div>
+
     <div id="archivListe"></div>
   </section>
 
@@ -1076,6 +1109,57 @@ function renderArchiv() {
       <button class="btn btn-del" onclick="event.stopPropagation();loescheAngebot('${a.id}','${esc(a.nummer)}')">🗑️</button>
     </div>`).join('');
 }
+
+/* Archiv-Chat: Fragen zum Archiv (Statistik/Verlauf) an Claude, via angebot-chat.js */
+let chatVerlauf = [];
+let chatLaeuft = false;
+
+function chatBubbleHTML(rolle, text, istFehler) {
+  const cls = rolle === 'user' ? 'user' : (istFehler ? 'assistant error' : 'assistant');
+  return `<div class="chat-bubble ${cls}">${esc(text)}</div>`;
+}
+
+async function chatSenden() {
+  if (chatLaeuft) return;
+  const input = document.getElementById('chatFrage');
+  const frage = input.value.trim();
+  if (!frage) return;
+
+  const container = document.getElementById('chatVerlauf');
+  container.insertAdjacentHTML('beforeend', chatBubbleHTML('user', frage));
+  input.value = '';
+  container.insertAdjacentHTML('beforeend', '<div class="chat-bubble assistant" id="chatLoading">⏳ …</div>');
+  container.scrollTop = container.scrollHeight;
+
+  chatLaeuft = true;
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/angebot-chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ frage, verlauf: chatVerlauf }),
+    });
+    const data = await res.json();
+    document.getElementById('chatLoading')?.remove();
+    if (!res.ok || data.error) {
+      container.insertAdjacentHTML('beforeend', chatBubbleHTML('assistant', data.error || `Fehler ${res.status}`, true));
+    } else {
+      container.insertAdjacentHTML('beforeend', chatBubbleHTML('assistant', data.antwort));
+      chatVerlauf.push({ rolle: 'user', text: frage });
+      chatVerlauf.push({ rolle: 'assistant', text: data.antwort });
+    }
+  } catch (err) {
+    document.getElementById('chatLoading')?.remove();
+    container.insertAdjacentHTML('beforeend', chatBubbleHTML('assistant', `Verbindungsfehler: ${err.message}`, true));
+  } finally {
+    chatLaeuft = false;
+    btn.disabled = false;
+    container.scrollTop = container.scrollHeight;
+    input.focus();
+  }
+}
+
 /* Archiv-Detail: eigener, unabhängiger Editor (Präfix 'm-') — funktioniert für JEDES Angebot
    im Archiv, unabhängig von der Quelle (Muster/generiert/manuell/akzeptiert/Telegram). */
 let modalEntwurf = null, modalEditMode = false, modalRowId = null;
