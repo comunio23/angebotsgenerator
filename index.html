@@ -121,13 +121,13 @@
     color: var(--gold); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 6px;
   }
 
-  textarea, input[type=text], input[type=number] {
+  textarea, input[type=text], input[type=number], select {
     width: 100%; border: 1.5px solid var(--line); border-radius: 8px;
     padding: 0.7rem 0.9rem; font-family: var(--sans); font-size: 0.92rem; color: var(--text);
     background: var(--ink); transition: border-color 0.2s, box-shadow 0.2s;
   }
   textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
-  textarea:focus, input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,168,75,0.15); }
+  textarea:focus, input:focus, select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(200,168,75,0.15); }
   textarea::placeholder, input::placeholder { color: #8a7c61; }
   label.fld { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.35rem; }
   .fld-group { margin-bottom: 1rem; }
@@ -260,6 +260,7 @@
   .badge-generiert { background: rgba(200,168,75,0.18); color: var(--gold-light); }
   .badge-manuell { background: rgba(111,160,214,0.18); color: #a9c8ea; }
   .badge-akzeptiert { background: rgba(79,179,163,0.18); color: #9fe0d3; }
+  .badge-formular { background: rgba(193,96,60,0.18); color: #e5a084; }
   @media (max-width: 620px) {
     .ang-row { grid-template-columns: 1fr auto; }
     .ang-badge-cell { grid-row: 1; grid-column: 2; }
@@ -418,6 +419,14 @@
       <div class="archiv-count"><b id="archivCount">–</b> Angebote im Speicher</div>
       <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
         <input type="text" id="archivSuche" placeholder="🔍 Suchen (Nummer, Kunde, Projekt) …" style="width:220px" oninput="renderArchiv()">
+        <select id="archivQuelleFilter" style="width:auto" onchange="renderArchiv()">
+          <option value="">Alle Quellen</option>
+          <option value="muster">Muster</option>
+          <option value="generiert">Generiert</option>
+          <option value="manuell">Manuell</option>
+          <option value="akzeptiert">Akzeptiert</option>
+          <option value="formular">Formular</option>
+        </select>
         <button class="btn btn-secondary btn-sm" onclick="oeffneManuell()">➕ Manuell hinzufügen</button>
       </div>
     </div>
@@ -938,14 +947,14 @@ async function akzeptiere() {
 }
 
 /* Per E-Mail versenden — exemplarisch über das Standard-Mailprogramm (mailto) */
-function emailModal() {
-  const text = sammleEntwurfText();
+function emailModal(text, prefillEmail) {
+  text = text || sammleEntwurfText();
   const p = parseAngebot(text);
   document.getElementById('modalTitle').textContent = 'Angebot per E-Mail versenden';
   const p2 = parseAngebotVoll(text);
   document.getElementById('modalBody').innerHTML = `
     <div class="fld-group"><label class="fld">Empfänger-E-Mail</label>
-      <input type="text" id="mailTo" placeholder="kunde@beispiel.de"></div>
+      <input type="text" id="mailTo" placeholder="kunde@beispiel.de" value="${esc(prefillEmail || '')}"></div>
     <div class="fld-group"><label class="fld">Betreff</label>
       <input type="text" id="mailBetreff" value="${esc('Ihr Angebot ' + (p.nummer || '') + ' – ' + BRAND.name)}"></div>
     <p class="hint" style="margin-bottom:0.75rem"><b>So läuft es in der Demo:</b> Zuerst „PDF erzeugen" (lädt das Angebot als Datei herunter), dann „Mail-Programm öffnen" — es öffnet sich eine vorbereitete E-Mail mit kurzem Anschreiben. Die heruntergeladene PDF hängen Sie mit einem Klick an.</p>
@@ -1093,10 +1102,12 @@ async function ladeArchiv() {
 }
 function renderArchiv() {
   const q = document.getElementById('archivSuche').value.toLowerCase().trim();
+  const quelleFilter = document.getElementById('archivQuelleFilter').value;
   const liste = document.getElementById('archivListe');
   document.getElementById('archivCount').textContent = archivDaten.length;
   const gefiltert = archivDaten.filter(a =>
-    !q || [a.nummer, a.kunde, a.projekt].some(f => (f || '').toLowerCase().includes(q)));
+    (!q || [a.nummer, a.kunde, a.projekt].some(f => (f || '').toLowerCase().includes(q))) &&
+    (!quelleFilter || a.quelle === quelleFilter));
   if (!gefiltert.length) { liste.innerHTML = `<p class="hint">Keine Angebote gefunden.</p>`; return; }
   liste.innerHTML = gefiltert.map(a => `
     <div class="ang-row" onclick="zeigeDetail('${a.id}')">
@@ -1164,12 +1175,15 @@ async function chatSenden() {
    im Archiv, unabhängig von der Quelle (Muster/generiert/manuell/akzeptiert/Telegram). */
 let modalEntwurf = null, modalEditMode = false, modalRowId = null;
 
+let modalKundeEmail = null;
+
 async function zeigeDetail(id) {
   try {
-    const rows = await sb(`angebot_angebote?id=eq.${id}&select=nummer,angebotstext`);
+    const rows = await sb(`angebot_angebote?id=eq.${id}&select=nummer,angebotstext,kunde_email`);
     const a = rows[0];
     document.getElementById('modalTitle').textContent = a.nummer || 'Angebot';
     modalRowId = id;
+    modalKundeEmail = a.kunde_email || null;
     modalEntwurf = parseAngebotVoll(a.angebotstext);
     modalEditMode = false;
     document.getElementById('modalBody').innerHTML = `
@@ -1180,6 +1194,7 @@ async function zeigeDetail(id) {
         <button class="btn btn-copy btn-sm" onclick="kopiereText(this)" data-text="${esc(a.angebotstext)}">📋 Kopieren</button>
         <button class="btn btn-pdf btn-sm" onclick="exportPDF(modalAktuellerText())">🖨️ PDF</button>
         <button class="btn btn-word btn-sm" onclick="exportWord(modalAktuellerText())">📝 Word</button>
+        <button class="btn btn-email btn-sm" onclick="emailModal(modalAktuellerText(), modalKundeEmail)">📧 Per E-Mail</button>
       </div>`;
     document.getElementById('modal').classList.add('visible');
   } catch (err) { setArchivStatus('error', `Detail konnte nicht geladen werden: ${err.message}`); }

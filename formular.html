@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angebot anfragen — Fliesen Metzger GmbH</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Karla:wght@400;500;600;700&display=swap');
+
+  :root {
+    --ink: #100d0a;
+    --panel: #1a1510;
+    --panel2: #221b13;
+    --line: #372c1e;
+    --gold: #c8a84b;
+    --gold-light: #e8c96a;
+    --moss: #6fa87c;
+    --danger: #d16a4f;
+    --text: #f8f2e4;
+    --muted: #c8bb9d;
+    --radius: 12px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.35);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Karla', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ink); color: var(--text); font-family: var(--sans);
+    line-height: 1.5;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  header.site { text-align: center; margin-bottom: 2rem; }
+  header.site .wortmarke {
+    font-family: var(--serif); font-weight: 700; letter-spacing: 0.04em;
+    font-size: 1.5rem; color: var(--gold-light);
+  }
+  header.site .wortmarke span { display: block; font-size: 0.9rem; font-weight: 500; color: var(--muted); letter-spacing: 0.15em; }
+  header.site .tagline { color: var(--muted); font-size: 0.9rem; margin-top: 0.35rem; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 1.5rem; box-shadow: var(--shadow);
+  }
+  h1.formtitel {
+    font-family: var(--serif); font-size: 1.5rem; margin: 0 0 0.4rem; color: var(--text);
+  }
+  p.intro { color: var(--muted); margin: 0 0 1.5rem; font-size: 0.92rem; }
+
+  fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.1rem 1.2rem; margin: 0 0 1.1rem; }
+  legend { font-weight: 600; color: var(--gold-light); padding: 0 0.4rem; font-size: 0.9rem; }
+
+  .fld-group { margin-bottom: 0.85rem; }
+  .fld-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .fld-row .fld-group { flex: 1; min-width: 140px; }
+  label.fld { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 0.3rem; }
+  input[type=text], input[type=email], input[type=tel], input[type=number], select, textarea {
+    width: 100%; background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--text); padding: 0.6rem 0.75rem; font-family: var(--sans); font-size: 0.92rem;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
+  textarea { min-height: 70px; resize: vertical; }
+
+  .raum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; }
+  .raum-grid .fld-group { margin-bottom: 0; }
+
+  .btn-submit {
+    width: 100%; padding: 0.9rem 1rem; border-radius: 8px; border: none; cursor: pointer;
+    background: var(--gold); color: #241a08; font-weight: 700; font-size: 1rem; font-family: var(--sans);
+    transition: background 0.15s;
+  }
+  .btn-submit:hover { background: var(--gold-light); }
+  .btn-submit:disabled { opacity: 0.6; cursor: default; }
+
+  .hinweis { color: var(--muted); font-size: 0.78rem; margin-top: 0.9rem; text-align: center; }
+
+  .status-bar {
+    display: none; align-items: center; gap: 10px; padding: 0.9rem 1.1rem;
+    border-radius: 8px; font-size: 0.86rem; font-weight: 500; margin-bottom: 1.2rem;
+    background: var(--panel2); border: 1px solid var(--line); border-left: 3px solid var(--muted);
+  }
+  .status-bar.visible { display: flex; }
+  .status-bar.error { border-left-color: var(--danger); color: #eba58f; }
+
+  .erfolg { text-align: center; padding: 2rem 1rem; }
+  .erfolg .icon { font-size: 2.6rem; margin-bottom: 0.75rem; }
+  .erfolg h2 { font-family: var(--serif); color: var(--gold-light); margin: 0 0 0.6rem; }
+  .erfolg p { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="site">
+    <div class="wortmarke">FLIESEN METZGER<span>GMBH · MEISTERBETRIEB</span></div>
+    <p class="tagline">Fliesen · Naturstein · Bäder</p>
+  </header>
+
+  <div class="card">
+    <div id="formularBereich">
+      <h1 class="formtitel">Jetzt Angebot anfragen</h1>
+      <p class="intro">Füllen Sie das Formular aus — wir erstellen daraus ein individuelles Angebot und melden uns bei Ihnen.</p>
+
+      <div class="status-bar" id="status"><span id="statusText"></span></div>
+
+      <form id="anfrageForm" onsubmit="return false;">
+        <fieldset>
+          <legend>Ihre Kontaktdaten</legend>
+          <div class="fld-group">
+            <label class="fld">Name *</label>
+            <input type="text" id="kundeName" required>
+          </div>
+          <div class="fld-row">
+            <div class="fld-group">
+              <label class="fld">E-Mail *</label>
+              <input type="email" id="kundeEmail" required>
+            </div>
+            <div class="fld-group">
+              <label class="fld">Telefon</label>
+              <input type="tel" id="kundeTelefon">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Räume</legend>
+          <div class="raum-grid">
+            <div class="fld-group"><label class="fld">Bad(er)</label><input type="number" id="raumBad" min="0" value="0"></div>
+            <div class="fld-group"><label class="fld">Küche(n)</label><input type="number" id="raumKueche" min="0" value="0"></div>
+            <div class="fld-group"><label class="fld">Flur(e)</label><input type="number" id="raumFlur" min="0" value="0"></div>
+            <div class="fld-group"><label class="fld">Terrasse/Balkon</label><input type="number" id="raumTerrasse" min="0" value="0"></div>
+          </div>
+          <div class="fld-group" style="margin-top:0.85rem">
+            <label class="fld">Sonstige Räume / zusätzliche Angaben</label>
+            <textarea id="raumSonstige" placeholder="z. B. Gäste-WC, Treppenhaus, besondere Wünsche …"></textarea>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Umfang & Zustand</legend>
+          <div class="fld-row">
+            <div class="fld-group">
+              <label class="fld">Fläche (ca. m²)</label>
+              <input type="number" id="flaeche" min="0" step="0.5">
+            </div>
+            <div class="fld-group">
+              <label class="fld">Verschmutzungsgrad (Altbestand)</label>
+              <select id="verschmutzung">
+                <option value="">— keine Angabe —</option>
+                <option value="gering">gering</option>
+                <option value="mittel">mittel</option>
+                <option value="stark">stark</option>
+              </select>
+            </div>
+          </div>
+          <div class="fld-group">
+            <label class="fld">Gewünschter Zeitrahmen</label>
+            <input type="text" id="zeitrahmen" placeholder="z. B. in 4 Wochen, ab August, so bald wie möglich …">
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Adresse der Baustelle</legend>
+          <div class="fld-group">
+            <label class="fld">Straße, Hausnummer</label>
+            <input type="text" id="adresseStrasse">
+          </div>
+          <div class="fld-row">
+            <div class="fld-group">
+              <label class="fld">PLZ</label>
+              <input type="text" id="adressePlz">
+            </div>
+            <div class="fld-group">
+              <label class="fld">Ort</label>
+              <input type="text" id="adresseOrt">
+            </div>
+          </div>
+        </fieldset>
+
+        <button class="btn-submit" id="submitBtn" onclick="formularAbsenden()">Angebot anfragen</button>
+        <p class="hinweis">Mit dem Absenden erklären Sie sich einverstanden, dass wir Ihre Angaben zur Erstellung eines Angebots nutzen. Musterformular einer Demo-Anwendung — keine echten Daten eingeben.</p>
+      </form>
+    </div>
+
+    <div id="erfolgBereich" style="display:none" class="erfolg">
+      <div class="icon">✅</div>
+      <h2>Vielen Dank!</h2>
+      <p>Ihre Anfrage ist bei uns eingegangen. Wir bereiten Ihr individuelles Angebot vor und melden uns in Kürze bei Ihnen.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =================== Supabase-Konfiguration (Anon — RLS-geschützt) =================== */
+/* Duplikat aus index.html, da formular.html ohne Build-Pipeline nichts importieren kann. */
+const SB_URL = 'https://xuuitgtnnphcwjzkaihc.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1dWl0Z3RubnBoY3dqemthaWhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3Njk5MDYsImV4cCI6MjA5NzM0NTkwNn0.4MPIuF73kmZ9ZXfedNEcxXiSPQf4V-O6SxHLlksX6Qs';
+
+async function sb(path, opts = {}) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      apikey: SB_ANON,
+      Authorization: `Bearer ${SB_ANON}`,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) throw new Error(`Supabase HTTP ${res.status}: ${await res.text()}`);
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+/* Angebotstext parsen — Duplikat aus index.html (gleiche Logik, gleiches Format).
+   Bei Formatänderung im Prompt IMMER alle Stellen konsistent halten: index.html
+   (parseAngebot/parseAngebotVoll/entwurfZuText), telegram-bot Edge Function
+   (parseAngebotFelder), und hier. */
+function parseAngebot(text) {
+  const head = text.match(/ANGEBOT\s+(FM-\d{4}-\d{3})\s+\|\s+(\d{2}\.\d{2}\.\d{4})/);
+  const nummer = head ? head[1] : null;
+  let datum = null;
+  if (head) { const [d, m, y] = head[2].split('.'); datum = `${y}-${m}-${d}`; }
+  const kunde = (text.match(/Auftraggeber\s*:\s*(.+)/) || [])[1]?.trim() || null;
+  const projekt = (text.match(/Projekt\s*:\s*(.+)/) || [])[1]?.trim() || null;
+  const bm = text.match(/BRUTTO:\s*([\d.]+),(\d{2})\s*€/);
+  const brutto = bm ? parseFloat(bm[1].replace(/\./g, '') + '.' + bm[2]) : null;
+  return { nummer, datum, kunde, projekt, brutto };
+}
+
+/* HTML-Escaping — Pflicht bei jeder innerHTML-Ausgabe von DB-/KI-Text */
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function setStatus(typ, text) {
+  const bar = document.getElementById('status');
+  if (!typ) { bar.className = 'status-bar'; return; }
+  document.getElementById('statusText').textContent = text;
+  bar.className = `status-bar visible ${typ}`;
+}
+
+/* Komfort: ?name=&email= aus dem Link vorbefüllen (z. B. wenn der Betrieb einen
+   personalisierten Link in einer Antwort-Mail verschickt). Rein optional. */
+(function prefillAusURL() {
+  const params = new URLSearchParams(location.search);
+  const name = params.get('name');
+  const email = params.get('email');
+  if (name) document.getElementById('kundeName').value = name;
+  if (email) document.getElementById('kundeEmail').value = email;
+})();
+
+function raumTextBauen() {
+  const teile = [];
+  const bad = +document.getElementById('raumBad').value || 0;
+  const kueche = +document.getElementById('raumKueche').value || 0;
+  const flur = +document.getElementById('raumFlur').value || 0;
+  const terrasse = +document.getElementById('raumTerrasse').value || 0;
+  if (bad) teile.push(`${bad} Bad${bad > 1 ? 'er' : ''}`);
+  if (kueche) teile.push(`${kueche} Küche${kueche > 1 ? 'n' : ''}`);
+  if (flur) teile.push(`${flur} Flur${flur > 1 ? 'e' : ''}`);
+  if (terrasse) teile.push(`${terrasse}x Terrasse/Balkon`);
+  const sonstige = document.getElementById('raumSonstige').value.trim();
+  if (sonstige) teile.push(sonstige);
+  return teile.join(', ') || 'keine Angabe';
+}
+
+async function formularAbsenden() {
+  const kundeName = document.getElementById('kundeName').value.trim();
+  const kundeEmail = document.getElementById('kundeEmail').value.trim();
+  if (!kundeName || !kundeEmail) {
+    setStatus('error', 'Bitte Name und E-Mail-Adresse angeben.');
+    return;
+  }
+
+  const antworten = {
+    raeume: {
+      bad: +document.getElementById('raumBad').value || 0,
+      kueche: +document.getElementById('raumKueche').value || 0,
+      flur: +document.getElementById('raumFlur').value || 0,
+      terrasse: +document.getElementById('raumTerrasse').value || 0,
+      sonstige: document.getElementById('raumSonstige').value.trim(),
+    },
+    flaeche_m2: document.getElementById('flaeche').value || null,
+    verschmutzungsgrad: document.getElementById('verschmutzung').value || null,
+    zeitrahmen: document.getElementById('zeitrahmen').value.trim() || null,
+    adresse: {
+      strasse: document.getElementById('adresseStrasse').value.trim(),
+      plz: document.getElementById('adressePlz').value.trim(),
+      ort: document.getElementById('adresseOrt').value.trim(),
+    },
+    telefon: document.getElementById('kundeTelefon').value.trim() || null,
+  };
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Wird gesendet …';
+  setStatus('loading', 'Ihre Anfrage wird verarbeitet — das dauert ca. 15–20 Sekunden …');
+
+  let formularId = null;
+  try {
+    // 1) Rohdaten sichern — auch falls die Generierung danach fehlschlägt, geht nichts verloren.
+    const inserted = await sb('angebot_formular_anfragen', {
+      method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ kunde_name: kundeName, kunde_email: kundeEmail, formular_antworten: antworten }),
+    });
+    formularId = inserted[0].id;
+
+    // 2) Anfrage-Text zusammenbauen — gleicher Stil wie eine manuell eingegebene Kundenanfrage.
+    const adresseText = [antworten.adresse.strasse, [antworten.adresse.plz, antworten.adresse.ort].filter(Boolean).join(' ')]
+      .filter(Boolean).join(', ');
+    const anfrage = `Kunde ${kundeName} (${kundeEmail}${antworten.telefon ? ', Tel. ' + antworten.telefon : ''}) bittet um ein Angebot für Fliesenlegerarbeiten.
+Räume: ${raumTextBauen()}.
+Fläche: ${antworten.flaeche_m2 ? antworten.flaeche_m2 + ' m²' : 'keine Angabe'}.
+Verschmutzungsgrad Altbestand: ${antworten.verschmutzungsgrad || 'keine Angabe'}.
+Gewünschter Zeitrahmen: ${antworten.zeitrahmen || 'keine Angabe'}.
+Adresse der Baustelle: ${adresseText || 'keine Angabe'}.`;
+
+    // 3) Angebot generieren — bestehende Function, unverändert.
+    const res = await fetch('/api/angebot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anfrage }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `Fehler ${res.status}`);
+
+    // 4) Ins Archiv übernehmen.
+    const p = parseAngebot(data.angebot);
+    const angebotRow = await sb('angebot_angebote', {
+      method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ ...p, angebotstext: data.angebot, quelle: 'formular', kunde_email: kundeEmail }),
+    });
+
+    // 5) Formular-Datensatz verknüpfen.
+    await sb(`angebot_formular_anfragen?id=eq.${formularId}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'angebot_erstellt', angebot_id: angebotRow[0].id }),
+    });
+
+    document.getElementById('formularBereich').style.display = 'none';
+    document.getElementById('erfolgBereich').style.display = 'block';
+  } catch (err) {
+    if (formularId) {
+      try {
+        await sb(`angebot_formular_anfragen?id=eq.${formularId}`, {
+          method: 'PATCH', headers: { Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'fehler' }),
+        });
+      } catch { /* Statusupdate ist best-effort, Hauptfehler wird unten gezeigt */ }
+    }
+    setStatus('error', `Leider ist etwas schiefgelaufen: ${err.message}. Ihre Angaben sind gespeichert — bitte versuchen Sie es später erneut oder kontaktieren Sie uns direkt.`);
+    btn.disabled = false; btn.textContent = 'Angebot anfragen';
+  }
+}
+</script>
+</body>
+</html>
