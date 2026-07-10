@@ -99,14 +99,34 @@ kein automatischer E-Mail-Versand** — der Betrieb verschickt den Link selbst m
 Anfrage klassisch per E-Mail hereinkommt (Entscheidung vom 2026-07-09: einfacher/robuster als eine
 automatisierte E-Mail-Erkennungs-Pipeline, siehe Plan-Historie).
 
-Ablauf: Formular ausfüllen → `POST angebot_formular_anfragen` (Rohdaten sichern) → Antworten zu
-einem Anfrage-Text zusammenbauen → `POST /api/angebot` (dieselbe Function wie im „Erstellen"-Tab,
-unverändert) → Ergebnis in `angebot_angebote` mit `quelle='formular'` + `kunde_email` → Formular-
-Datensatz auf `status='angebot_erstellt'` verknüpfen. Bei Fehlern bleiben die Rohdaten erhalten
-(`status='fehler'`), kein Datenverlust für den Kunden.
+Enthält einen fest vorgegebenen, fliesenspezifischen Fragenkatalog (beliebig viele Flächen-
+Positionen mit Bereich/Boden/Wand in m²/Fliesentyp, plus Einzelfragen zu Altbelag/Untergrund/
+Abdichtung/Fußbodenheizung/Fugen) sowie einen vorgeschalteten **Richtpreis-Check**: Der Button
+„Eingaben prüfen" berechnet rein clientseitig (kein KI-Aufruf, sofort) einen Überschlag aus den
+echten Stammdaten (Material-/Leistungspreise, Anfahrtspauschale, MwSt.) als Spanne. Erst danach
+erscheint „Anfrage wirklich absenden" — jede spätere Eingabe-Änderung blendet den Preis wieder aus.
+
+Ablauf: Formular ausfüllen → Richtpreis prüfen → `POST angebot_formular_anfragen` (Rohdaten
+sichern) → Antworten zu einem Anfrage-Text zusammenbauen → `POST /api/angebot` (dieselbe Function
+wie im „Erstellen"-Tab, unverändert) → generierter Entwurf wird **auf dem Formular-Datensatz
+selbst** gespeichert (`angebotstext`/`nummer`/`kunde`/`projekt`/`brutto`, `status='angebot_erstellt'`)
+— **nicht** automatisch in `angebot_angebote`. Bei Fehlern bleiben die Rohdaten erhalten
+(`status='fehler'` + `fehler_meldung`), kein Datenverlust für den Kunden.
 
 Unterstützt optionale `?name=&email=`-URL-Parameter zum Vorbefüllen (z. B. für personalisierte
 Links in Antwort-Mails) — rein optional, kein funktionaler Pflichtbestandteil.
+
+## Tab „Neue Anfragen" (`index.html`, internes Tool)
+
+Bewusste Trennung von unreviewten Formular-Entwürfen und dem echten Archiv: Nur was der Betrieb
+hier bewusst per „✅ In Archiv übernehmen" bestätigt, landet in `angebot_angebote` (`quelle='formular'`)
+und fließt damit in die Referenzdatenbasis künftiger Generierungen ein (`ladeKontext()` in
+`angebot.js` liest ausschließlich `angebot_angebote`). Zeigt alle `angebot_formular_anfragen` mit
+Status `eingegangen`/`angebot_erstellt`/`fehler` (Zähler-Badge im Nav-Tab). Bei `status='fehler'`
+steht die echte Fehlermeldung (`fehler_meldung`) im Detail, plus „🔄 Erneut versuchen" — baut aus
+den gespeicherten `formular_antworten` denselben Anfrage-Text erneut auf (`formularAntwortenZuAnfrageText()`,
+Duplikat der Logik aus `formular.html`) und ruft `/api/angebot` erneut auf, ohne dass der Kunde
+etwas tun muss. „🗑️ Verwerfen" löscht den Datensatz nach Bestätigung.
 
 ## DSGVO-Besonderheit dieses Projekts
 

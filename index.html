@@ -261,6 +261,23 @@
   .badge-manuell { background: rgba(111,160,214,0.18); color: #a9c8ea; }
   .badge-akzeptiert { background: rgba(79,179,163,0.18); color: #9fe0d3; }
   .badge-formular { background: rgba(193,96,60,0.18); color: #e5a084; }
+  .badge-neu { background: rgba(111,160,214,0.18); color: #a9c8ea; }
+  .badge-entwurf { background: rgba(200,168,75,0.18); color: var(--gold-light); }
+  .badge-anfrage-fehler { background: rgba(209,106,79,0.2); color: #eba58f; }
+
+  .tab-count {
+    display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 6px;
+    background: var(--clay); color: #fff; border-radius: 10px; font-size: 0.7rem;
+    font-weight: 700; vertical-align: middle;
+  }
+  .anfrage-row {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 0.9rem;
+    padding: 0.9rem 1.1rem; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 0.6rem; cursor: pointer; transition: border-color 0.15s;
+  }
+  .anfrage-row:hover { border-color: var(--gold); }
+  .anfrage-main .kunde-name { font-weight: 700; font-size: 0.92rem; color: var(--text); }
+  .anfrage-main .anfrage-sub { font-size: 0.8rem; color: var(--muted); }
   @media (max-width: 620px) {
     .ang-row { grid-template-columns: 1fr auto; }
     .ang-badge-cell { grid-row: 1; grid-column: 2; }
@@ -334,6 +351,7 @@
 
 <nav class="tabs">
   <button class="tab-btn active" data-view="erstellen">⚡ Angebot erstellen</button>
+  <button class="tab-btn" data-view="neueanfragen">📥 Neue Anfragen<span class="tab-count" id="neueAnfragenCount" style="display:none"></span></button>
   <button class="tab-btn" data-view="archiv">🗂️ Angebotsarchiv</button>
   <button class="tab-btn" data-view="stammdaten">⚙️ Stammdaten</button>
 </nav>
@@ -405,6 +423,17 @@
       <div class="step"><div class="step-num">3</div><div>Fertiges Angebot in 10–20 Sekunden — mit Positionen, Preisen, MwSt. und Zahlungsbedingungen.</div></div>
       <div class="step"><div class="step-num">4</div><div>Bei Bedarf <strong>ins Archiv übernehmen</strong>, kopieren oder als PDF/Word exportieren.</div></div>
     </div>
+  </section>
+
+  <!-- ============ TAB: NEUE ANFRAGEN (aus formular.html) ============ -->
+  <section class="view" id="view-neueanfragen">
+    <div class="hero">
+      <div class="eyebrow">Posteingang</div>
+      <h1>Neue Anfragen</h1>
+      <p>Über das öffentliche Kundenformular eingegangene Anfragen. KI-Entwürfe hier prüfen, bevor sie ins Archiv übernommen werden — nur bewusst übernommene Angebote fließen in künftige Generierungen ein.</p>
+    </div>
+    <div class="status-bar" id="neueAnfragenStatus"><span id="neueAnfragenStatusIcon"></span><span id="neueAnfragenStatusText"></span></div>
+    <div id="neueAnfragenListe"></div>
   </section>
 
   <!-- ============ TAB 2: ARCHIV ============ -->
@@ -825,13 +854,14 @@ function fmtDatum(d) {
 }
 
 /* =================== Tab-Navigation =================== */
-const views = ['erstellen', 'archiv', 'stammdaten'];
+const views = ['erstellen', 'neueanfragen', 'archiv', 'stammdaten'];
 function zeigeView(name) {
   if (!views.includes(name)) name = 'erstellen';
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.view === name));
   document.getElementById('view-' + name).classList.add('active');
   location.hash = name;
+  if (name === 'neueanfragen') ladeNeueAnfragen();
   if (name === 'archiv') ladeArchiv();
   if (name === 'stammdaten') ladeStammdaten();
 }
@@ -1094,6 +1124,178 @@ function stopRec() {
   recording = false; micBtn.classList.remove('recording');
   if (recog) { recog.onend = null; recog.stop(); recog = null; }
   setStatus('success', 'Aufnahme beendet. Text prüfen und ggf. korrigieren.');
+}
+
+/* =================== TAB: Neue Anfragen (aus formular.html) =================== */
+let neueAnfragenDaten = [];
+
+function setNeueAnfragenStatus(typ, text) {
+  const bar = document.getElementById('neueAnfragenStatus');
+  if (!typ) { bar.className = 'status-bar'; return; }
+  const icons = { loading: '⏳', error: '❌', success: '✅' };
+  document.getElementById('neueAnfragenStatusIcon').textContent = icons[typ] || '';
+  document.getElementById('neueAnfragenStatusText').textContent = text;
+  bar.className = `status-bar visible ${typ}`;
+}
+
+async function ladeNeueAnfragenCount() {
+  try {
+    const rows = await sb(`angebot_formular_anfragen?status=in.(eingegangen,angebot_erstellt,fehler)&select=id`);
+    const badge = document.getElementById('neueAnfragenCount');
+    if (rows.length) { badge.textContent = rows.length; badge.style.display = 'inline-block'; }
+    else { badge.style.display = 'none'; }
+  } catch { /* Badge ist nur ein Komfort-Hinweis, kein kritischer Pfad */ }
+}
+
+async function ladeNeueAnfragen() {
+  setNeueAnfragenStatus('loading', 'Anfragen werden geladen …');
+  try {
+    neueAnfragenDaten = await sb(`angebot_formular_anfragen?status=in.(eingegangen,angebot_erstellt,fehler)&select=*&order=created_at.desc`);
+    setNeueAnfragenStatus('');
+    renderNeueAnfragen();
+    ladeNeueAnfragenCount();
+  } catch (err) { setNeueAnfragenStatus('error', `Laden fehlgeschlagen: ${err.message}`); }
+}
+
+function renderNeueAnfragen() {
+  const liste = document.getElementById('neueAnfragenListe');
+  if (!neueAnfragenDaten.length) { liste.innerHTML = `<p class="hint">Keine neuen Anfragen — alles bearbeitet.</p>`; return; }
+  const badgeLabel = { eingegangen: 'Neu', angebot_erstellt: 'Entwurf bereit', fehler: 'Fehlgeschlagen' };
+  const badgeClass = { eingegangen: 'neu', angebot_erstellt: 'entwurf', fehler: 'anfrage-fehler' };
+  liste.innerHTML = neueAnfragenDaten.map(a => `
+    <div class="anfrage-row" onclick="zeigeAnfrageDetail('${a.id}')">
+      <span class="badge badge-${badgeClass[a.status]}">${badgeLabel[a.status]}</span>
+      <div class="anfrage-main">
+        <div class="kunde-name">${esc(a.kunde_name || '—')}</div>
+        <div class="anfrage-sub">${esc(a.kunde_email || '')}${a.brutto != null ? ' · ' + fmtBrutto(a.brutto) : ''}</div>
+      </div>
+      <div class="anfrage-sub">${new Date(a.created_at).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>
+    </div>`).join('');
+}
+
+/* Formular-Antworten (JSONB) wieder in denselben Anfrage-Text-Stil bringen wie in
+   formular.html — nötig für "Erneut versuchen", ohne dass der Kunde neu eingeben muss. */
+function formularAntwortenZuAnfrageText(kundeName, kundeEmail, antworten) {
+  const positionenText = (antworten.positionen || []).map(p => {
+    const teile = [];
+    if (p.boden && p.bodenM2 > 0) teile.push(`Boden ${p.bodenM2} m²`);
+    if (p.wand && p.wandM2 > 0) teile.push(`Wand ${p.wandM2} m²`);
+    if (!teile.length) return null;
+    return `${p.bereich}: ${teile.join(', ')}${p.fliesentyp ? ', Fliesentyp: ' + p.fliesentyp : ''}`;
+  }).filter(Boolean).join(' | ');
+  const z = antworten.zustand || {};
+  const adr = antworten.adresse || {};
+  const adresseText = [adr.strasse, [adr.plz, adr.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  return `Kunde ${kundeName} (${kundeEmail}${antworten.telefon ? ', Tel. ' + antworten.telefon : ''}) bittet um ein Angebot für Fliesenlegerarbeiten.
+Flächen: ${positionenText || 'keine Angabe'}.
+Alter Belag muss entfernt werden: ${z.altbelag_entfernen ? 'ja' : 'nein'}.
+Untergrund vorbereiten/ausgleichen nötig: ${z.untergrund_vorbereiten || 'unsicher'}.
+Abdichtung nötig (Nassbereich): ${z.abdichtung_noetig || 'unsicher'}.
+Fußbodenheizung vorhanden: ${z.fussbodenheizung || 'unsicher'}.
+Silikon-/Anschlussfugen: ${z.fugenlaufmeter ? z.fugenlaufmeter + ' lfm' : 'keine Angabe'}.
+Gewünschter Zeitrahmen: ${antworten.zeitrahmen || 'keine Angabe'}.
+Adresse der Baustelle: ${adresseText || 'keine Angabe'}.
+${antworten.notizen ? 'Sonstige Wünsche: ' + antworten.notizen + '.' : ''}`;
+}
+
+async function zeigeAnfrageDetail(id) {
+  const a = neueAnfragenDaten.find(x => x.id === id);
+  if (!a) return;
+  document.getElementById('modalTitle').textContent = a.kunde_name || 'Neue Anfrage';
+  let body = '';
+  if (a.status === 'angebot_erstellt' && a.angebotstext) {
+    const entwurf = parseAngebotVoll(a.angebotstext);
+    body = `
+      <div class="paper" style="max-height:52vh;overflow:auto">${belegHTMLFromData(entwurf, false)}</div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="anfrageUebernehmen('${a.id}', this)">✅ In Archiv übernehmen</button>
+        <button class="btn btn-del btn-sm" onclick="anfrageVerwerfen('${a.id}', this)">🗑️ Verwerfen</button>
+      </div>`;
+  } else if (a.status === 'fehler') {
+    body = `
+      <p class="hint" style="color:var(--danger)"><b>Fehlermeldung:</b> ${esc(a.fehler_meldung || 'Unbekannter Fehler')}</p>
+      <p class="hint">Die Angaben des Kunden sind gespeichert. Ein erneuter Versuch generiert das Angebot noch einmal, ohne dass der Kunde etwas tun muss.</p>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="anfrageErneutVersuchen('${a.id}', this)">🔄 Erneut versuchen</button>
+        <button class="btn btn-del btn-sm" onclick="anfrageVerwerfen('${a.id}', this)">🗑️ Verwerfen</button>
+      </div>`;
+  } else {
+    body = `<p class="hint">Diese Anfrage wird noch verarbeitet — bitte kurz warten und die Seite neu laden.</p>`;
+  }
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modal').classList.add('visible');
+}
+
+async function anfrageUebernehmen(id, btn) {
+  const a = neueAnfragenDaten.find(x => x.id === id);
+  if (!a) return;
+  btn.disabled = true; btn.textContent = '⏳ Wird übernommen …';
+  try {
+    const angebotRow = await sb('angebot_angebote', {
+      method: 'POST', headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({
+        nummer: a.nummer, kunde: a.kunde, projekt: a.projekt, brutto: a.brutto,
+        angebotstext: a.angebotstext, quelle: 'formular', kunde_email: a.kunde_email,
+      }),
+    });
+    await sb(`angebot_formular_anfragen?id=eq.${id}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'archiviert', angebot_id: angebotRow[0].id }),
+    });
+    schliesseModal();
+    setNeueAnfragenStatus('success', `Angebot ${a.nummer || ''} ins Archiv übernommen.`);
+    ladeNeueAnfragen();
+  } catch (err) {
+    btn.disabled = false; btn.textContent = '✅ In Archiv übernehmen';
+    setNeueAnfragenStatus('error', `Übernehmen fehlgeschlagen: ${err.message}`);
+  }
+}
+
+async function anfrageErneutVersuchen(id, btn) {
+  const a = neueAnfragenDaten.find(x => x.id === id);
+  if (!a) return;
+  btn.disabled = true; btn.textContent = '⏳ Wird generiert …';
+  try {
+    const anfrage = formularAntwortenZuAnfrageText(a.kunde_name, a.kunde_email, a.formular_antworten || {});
+    const res = await fetch('/api/angebot', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ anfrage }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `Fehler ${res.status}`);
+    const p = parseAngebot(data.angebot);
+    await sb(`angebot_formular_anfragen?id=eq.${id}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        status: 'angebot_erstellt', angebotstext: data.angebot,
+        nummer: p.nummer, kunde: p.kunde, projekt: p.projekt, brutto: p.brutto, fehler_meldung: null,
+      }),
+    });
+    schliesseModal();
+    setNeueAnfragenStatus('success', 'Angebot erfolgreich generiert.');
+    ladeNeueAnfragen();
+  } catch (err) {
+    await sb(`angebot_formular_anfragen?id=eq.${id}`, {
+      method: 'PATCH', headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'fehler', fehler_meldung: err.message }),
+    }).catch(() => {});
+    btn.disabled = false; btn.textContent = '🔄 Erneut versuchen';
+    setNeueAnfragenStatus('error', `Erneuter Versuch fehlgeschlagen: ${err.message}`);
+  }
+}
+
+async function anfrageVerwerfen(id, btn) {
+  if (!confirm('Diese Anfrage wirklich verwerfen und löschen?')) return;
+  btn.disabled = true;
+  try {
+    await sb(`angebot_formular_anfragen?id=eq.${id}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
+    schliesseModal();
+    setNeueAnfragenStatus('success', 'Anfrage verworfen.');
+    ladeNeueAnfragen();
+  } catch (err) {
+    btn.disabled = false;
+    setNeueAnfragenStatus('error', `Verwerfen fehlgeschlagen: ${err.message}`);
+  }
 }
 
 /* =================== TAB 2: Archiv =================== */
@@ -1387,8 +1589,9 @@ async function speichereStammdaten() {
   finally { btn.disabled = false; }
 }
 
-/* Initial: Tab aus URL-Hash */
+/* Initial: Tab aus URL-Hash; Zähler für "Neue Anfragen" unabhängig vom aktiven Tab laden */
 zeigeView(location.hash.slice(1) || 'erstellen');
+ladeNeueAnfragenCount();
 </script>
 </body>
 </html>

@@ -534,17 +534,17 @@ ${antworten.notizen ? 'Sonstige Wünsche: ' + antworten.notizen + '.' : ''}`;
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || `Fehler ${res.status}`);
 
-    // 4) Ins Archiv übernehmen.
+    // 4) KI-Entwurf auf dem Formular-Datensatz selbst speichern — NICHT automatisch
+    // ins Archiv übernehmen. Der Betrieb prüft den Entwurf im Tab "Neue Anfragen" und
+    // übernimmt ihn erst dort bewusst ins Archiv (trennt ungeprüfte Anfragen von der
+    // Referenzdatenbasis, die künftige Generierungen speist).
     const p = parseAngebot(data.angebot);
-    const angebotRow = await sb('angebot_angebote', {
-      method: 'POST', headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ ...p, angebotstext: data.angebot, quelle: 'formular', kunde_email: kundeEmail }),
-    });
-
-    // 5) Formular-Datensatz verknüpfen.
     await sb(`angebot_formular_anfragen?id=eq.${formularId}`, {
       method: 'PATCH', headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ status: 'angebot_erstellt', angebot_id: angebotRow[0].id }),
+      body: JSON.stringify({
+        status: 'angebot_erstellt', angebotstext: data.angebot,
+        nummer: p.nummer, kunde: p.kunde, projekt: p.projekt, brutto: p.brutto,
+      }),
     });
 
     document.getElementById('formularBereich').style.display = 'none';
@@ -554,7 +554,7 @@ ${antworten.notizen ? 'Sonstige Wünsche: ' + antworten.notizen + '.' : ''}`;
       try {
         await sb(`angebot_formular_anfragen?id=eq.${formularId}`, {
           method: 'PATCH', headers: { Prefer: 'return=minimal' },
-          body: JSON.stringify({ status: 'fehler' }),
+          body: JSON.stringify({ status: 'fehler', fehler_meldung: err.message }),
         });
       } catch { /* Statusupdate ist best-effort, Hauptfehler wird unten gezeigt */ }
     }
