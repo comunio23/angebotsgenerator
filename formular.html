@@ -289,6 +289,26 @@ function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
+
+/* Robuster Aufruf von /api/angebot — Duplikat aus index.html (siehe dort für
+   Begründung: Netlify liefert bei Function-Timeout/Fehler eine HTML-Fehlerseite
+   statt JSON, res.json() würde sonst mit kryptischer Meldung abstürzen). */
+async function rufeAngebotApiAuf(anfrage) {
+  const res = await fetch('/api/angebot', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anfrage }),
+  });
+  const rohtext = await res.text();
+  let data;
+  try { data = JSON.parse(rohtext); }
+  catch {
+    throw new Error(res.ok
+      ? 'Server-Antwort war kein gültiges JSON (unerwartetes Format).'
+      : `Server-Fehler ${res.status}${res.statusText ? ' (' + res.statusText + ')' : ''} — vermutlich Zeitüberschreitung bei der KI-Generierung. Bitte erneut versuchen.`);
+  }
+  if (!res.ok || data.error) throw new Error(data.error || `Fehler ${res.status}`);
+  return data.angebot;
+}
 const fmtEUR = n => Math.round(n).toLocaleString('de-DE');
 
 function setStatus(typ, text) {
@@ -527,22 +547,17 @@ Adresse der Baustelle: ${adresseText || 'keine Angabe'}.
 ${antworten.notizen ? 'Sonstige Wünsche: ' + antworten.notizen + '.' : ''}`;
 
     // 3) Angebot generieren — bestehende Function, unverändert.
-    const res = await fetch('/api/angebot', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ anfrage }),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || `Fehler ${res.status}`);
+    const angebotText = await rufeAngebotApiAuf(anfrage);
 
     // 4) KI-Entwurf auf dem Formular-Datensatz selbst speichern — NICHT automatisch
     // ins Archiv übernehmen. Der Betrieb prüft den Entwurf im Tab "Neue Anfragen" und
     // übernimmt ihn erst dort bewusst ins Archiv (trennt ungeprüfte Anfragen von der
     // Referenzdatenbasis, die künftige Generierungen speist).
-    const p = parseAngebot(data.angebot);
+    const p = parseAngebot(angebotText);
     await sb(`angebot_formular_anfragen?id=eq.${formularId}`, {
       method: 'PATCH', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({
-        status: 'angebot_erstellt', angebotstext: data.angebot,
+        status: 'angebot_erstellt', angebotstext: angebotText,
         nummer: p.nummer, kunde: p.kunde, projekt: p.projekt, brutto: p.brutto,
       }),
     });

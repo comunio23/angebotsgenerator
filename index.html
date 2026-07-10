@@ -405,8 +405,8 @@
             <button class="btn btn-save btn-sm" id="akzeptBtn" onclick="akzeptiere()">✓ Angebot akzeptieren</button>
             <button class="btn btn-email btn-sm" onclick="emailModal()">📧 Per E-Mail</button>
             <button class="btn btn-copy btn-sm" id="copyBtn" onclick="kopieren()">📋 Kopieren</button>
-            <button class="btn btn-pdf btn-sm" onclick="exportPDF()">🖨️ PDF</button>
-            <button class="btn btn-word btn-sm" onclick="exportWord()">📝 Word</button>
+            <button class="btn btn-pdf btn-sm" onclick="exportPDF(null, this)">🖨️ PDF</button>
+            <button class="btn btn-word btn-sm" onclick="exportWord(null, this)">📝 Word</button>
           </div>
         </div>
         <div id="printArea" style="display:none;"></div>
@@ -537,6 +537,10 @@
   </div>
 </div>
 
+<!-- Echter PDF-Export als Datei-Download (statt Browser-Druckdialog) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- Echter .docx-Export (statt HTML-als-.doc-Trick) — erzeugt gültiges OOXML/ZIP -->
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js/dist/html-docx.js"></script>
 <script>
 /* =================== Supabase-Konfiguration (Anon — RLS-geschützt) =================== */
 const SB_URL = 'https://xuuitgtnnphcwjzkaihc.supabase.co';
@@ -561,6 +565,28 @@ async function sb(path, opts = {}) {
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/* Robuster Aufruf von /api/angebot — liest die Antwort IMMER erst als Text und
+   parst dann erst als JSON. Grund: Netlify liefert bei Function-Timeout/Fehler
+   eine HTML-Fehlerseite statt JSON zurück; res.json() würde dabei mit einer
+   kryptischen "Unexpected token '<' ... is not valid JSON"-Meldung abstürzen,
+   ohne dass der Nutzer erfährt, was wirklich passiert ist. */
+async function rufeAngebotApiAuf(anfrage) {
+  const res = await fetch('/api/angebot', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anfrage }),
+  });
+  const rohtext = await res.text();
+  let data;
+  try { data = JSON.parse(rohtext); }
+  catch {
+    throw new Error(res.ok
+      ? 'Server-Antwort war kein gültiges JSON (unerwartetes Format).'
+      : `Server-Fehler ${res.status}${res.statusText ? ' (' + res.statusText + ')' : ''} — vermutlich Zeitüberschreitung bei der KI-Generierung. Bitte erneut versuchen.`);
+  }
+  if (!res.ok || data.error) throw new Error(data.error || `Fehler ${res.status}`);
+  return data.angebot;
 }
 
 /* Angebotstext parsen (gleiche Logik wie Seed) */
@@ -923,19 +949,14 @@ async function generiereAngebot() {
   const start = Date.now();
 
   try {
-    const res = await fetch('/api/angebot', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ anfrage }),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) { setStatus('error', data.error || `Fehler ${res.status}`); return; }
+    const angebotText = await rufeAngebotApiAuf(anfrage);
 
     const dauer = ((Date.now() - start) / 1000).toFixed(1);
-    letztesAngebot = data.angebot;
-    entwurf = parseAngebotVoll(data.angebot);
+    letztesAngebot = angebotText;
+    entwurf = parseAngebotVoll(angebotText);
     entwurf.rabattProzent = 0;
     editMode = false;
-    document.getElementById('ausgabe').textContent = data.angebot;
+    document.getElementById('ausgabe').textContent = angebotText;
     document.getElementById('ausgabe').style.display = 'none';
     document.getElementById('belegView').innerHTML = belegHTMLFromData(entwurf, false);
     document.getElementById('belegView').style.display = 'block';
@@ -989,7 +1010,7 @@ function emailModal(text, prefillEmail) {
       <input type="text" id="mailBetreff" value="${esc('Ihr Angebot ' + (p.nummer || '') + ' – ' + BRAND.name)}"></div>
     <p class="hint" style="margin-bottom:0.75rem"><b>So läuft es in der Demo:</b> Zuerst „PDF erzeugen" (lädt das Angebot als Datei herunter), dann „Mail-Programm öffnen" — es öffnet sich eine vorbereitete E-Mail mit kurzem Anschreiben. Die heruntergeladene PDF hängen Sie mit einem Klick an.</p>
     <div class="btn-row">
-      <button class="btn btn-pdf btn-sm" onclick="exportPDF(window._mailText)">🖨️ PDF erzeugen</button>
+      <button class="btn btn-pdf btn-sm" onclick="exportPDF(window._mailText, this)">🖨️ PDF erzeugen</button>
       <button class="btn btn-email btn-sm" onclick="mailtoSenden()">📧 Mail-Programm öffnen</button>
     </div>`;
   window._mailText = text;
@@ -1004,24 +1025,58 @@ function mailtoSenden() {
 }
 
 /* Export PDF / Word / Kopieren — immer im Kopfbogen-Design, mit übernommenen Änderungen */
-function exportPDF(text) {
-  text = text || sammleEntwurfText();
-  const pa = document.getElementById('printArea');
-  pa.innerHTML = belegHTML(text); pa.style.display = 'block';
-  window.print(); pa.style.display = 'none';
-}
-function exportWord(text) {
+async function exportPDF(text, btn) {
   text = text || sammleEntwurfText();
   const nr = (parseAngebot(text).nummer || 'Angebot');
-  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-    <head><meta charset="utf-8"><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
-    <style>@page{size:A4;margin:1.6cm;} body{margin:0;} table{border-collapse:collapse;}</style></head>
-    <body>${belegHTML(text)}</body></html>`;
-  const blob = new Blob(['﻿', html], { type: 'application/msword' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `${nr}.doc`;
-  a.click(); URL.revokeObjectURL(url);
+  const original = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ PDF wird erstellt …'; }
+
+  // Off-Screen-Container statt sichtbarem #printArea + window.print(): erzeugt eine
+  // echte PDF-Datei zum direkten Download, statt nur den Browser-Druckdialog zu öffnen
+  // (der erfordert manuelles "Als PDF speichern" und wurde als "kann PDF nicht
+  // herunterladen" gemeldet).
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-99999px;top:0;width:210mm;background:#fff;';
+  container.innerHTML = belegHTML(text);
+  document.body.appendChild(container);
+  try {
+    await html2pdf().set({
+      margin: 10,
+      filename: `${nr}.pdf`,
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    }).from(container).save();
+  } catch (err) {
+    setStatus('error', `PDF-Erzeugung fehlgeschlagen: ${err.message}`);
+  } finally {
+    container.remove();
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+  }
+}
+function exportWord(text, btn) {
+  text = text || sammleEntwurfText();
+  const nr = (parseAngebot(text).nummer || 'Angebot');
+  const original = btn ? btn.textContent : null;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Word wird erstellt …'; }
+  try {
+    // htmlDocx.asBlob() erzeugt ein ECHTES .docx (gültiges OOXML/ZIP-Format) —
+    // vorher wurde hier eine HTML-Datei nur als .doc ausgegeben (MIME-Trick), was
+    // Word beim Öffnen mit einer "Format stimmt nicht mit Erweiterung überein"-
+    // Warnung quittiert und als "falsches Format" gemeldet wurde.
+    const html = `<html><head><meta charset="utf-8"></head><body>${belegHTML(text)}</body></html>`;
+    const blob = htmlDocx.asBlob(html, {
+      orientation: 'portrait',
+      margins: { top: 800, right: 900, bottom: 800, left: 900 },
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${nr}.docx`;
+    a.click(); URL.revokeObjectURL(url);
+  } catch (err) {
+    setStatus('error', `Word-Erzeugung fehlgeschlagen: ${err.message}`);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = original; }
+  }
 }
 async function kopieren() {
   const btn = document.getElementById('copyBtn');
@@ -1257,17 +1312,12 @@ async function anfrageErneutVersuchen(id, btn) {
   btn.disabled = true; btn.textContent = '⏳ Wird generiert …';
   try {
     const anfrage = formularAntwortenZuAnfrageText(a.kunde_name, a.kunde_email, a.formular_antworten || {});
-    const res = await fetch('/api/angebot', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ anfrage }),
-    });
-    const data = await res.json();
-    if (!res.ok || data.error) throw new Error(data.error || `Fehler ${res.status}`);
-    const p = parseAngebot(data.angebot);
+    const angebotText = await rufeAngebotApiAuf(anfrage);
+    const p = parseAngebot(angebotText);
     await sb(`angebot_formular_anfragen?id=eq.${id}`, {
       method: 'PATCH', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({
-        status: 'angebot_erstellt', angebotstext: data.angebot,
+        status: 'angebot_erstellt', angebotstext: angebotText,
         nummer: p.nummer, kunde: p.kunde, projekt: p.projekt, brutto: p.brutto, fehler_meldung: null,
       }),
     });
@@ -1408,8 +1458,8 @@ async function zeigeDetail(id) {
         <button class="btn btn-edit btn-sm" id="modalEditBtn" onclick="modalToggleEdit()">✏️ Bearbeiten</button>
         <button class="btn btn-save btn-sm" onclick="modalSpeichern(this)">💾 Änderungen speichern</button>
         <button class="btn btn-copy btn-sm" onclick="kopiereText(this)" data-text="${esc(a.angebotstext)}">📋 Kopieren</button>
-        <button class="btn btn-pdf btn-sm" onclick="exportPDF(modalAktuellerText())">🖨️ PDF</button>
-        <button class="btn btn-word btn-sm" onclick="exportWord(modalAktuellerText())">📝 Word</button>
+        <button class="btn btn-pdf btn-sm" onclick="exportPDF(modalAktuellerText(), this)">🖨️ PDF</button>
+        <button class="btn btn-word btn-sm" onclick="exportWord(modalAktuellerText(), this)">📝 Word</button>
         <button class="btn btn-email btn-sm" onclick="emailModal(modalAktuellerText(), modalKundeEmail)">📧 Per E-Mail</button>
       </div>`;
     document.getElementById('modal').classList.add('visible');

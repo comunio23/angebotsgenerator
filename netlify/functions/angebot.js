@@ -13,11 +13,15 @@ const CORS_HEADERS = {
 
 const sbHeaders = { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` };
 
-// Historische Angebote (Deckel: 40, chronologisch neueste zuerst geladen, aber
+// Historische Angebote (Deckel: 20, chronologisch neueste zuerst geladen, aber
 // aufsteigend in den Prompt gegeben) + Stammdaten-Singleton parallel laden.
+// Deckel bewusst niedrig gehalten (vorher 40): ein zu großer Prompt verlangsamt
+// die Claude-Antwort und riskiert, dass Netlifys Function-Zeitlimit greift —
+// dann liefert Netlify eine HTML-Fehlerseite statt JSON zurück (siehe
+// rufeAngebotApiAuf() im Frontend für die Fehlerbehandlung dieses Falls).
 async function ladeKontext() {
   const [angRes, stammRes] = await Promise.all([
-    fetch(`${SB_URL}/rest/v1/angebot_angebote?select=nummer,datum,angebotstext&order=datum.desc.nullslast,created_at.desc&limit=40`, { headers: sbHeaders }),
+    fetch(`${SB_URL}/rest/v1/angebot_angebote?select=nummer,datum,angebotstext&order=datum.desc.nullslast,created_at.desc&limit=20`, { headers: sbHeaders }),
     fetch(`${SB_URL}/rest/v1/angebot_stammdaten?id=eq.1&select=daten`, { headers: sbHeaders }),
   ]);
   if (!angRes.ok)  throw new Error(`Supabase Angebote HTTP ${angRes.status}: ${await angRes.text()}`);
