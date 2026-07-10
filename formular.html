@@ -28,7 +28,7 @@
     margin: 0; background: var(--ink); color: var(--text); font-family: var(--sans);
     line-height: 1.5;
   }
-  .wrap { max-width: 640px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
   header.site { text-align: center; margin-bottom: 2rem; }
   header.site .wortmarke {
     font-family: var(--serif); font-weight: 700; letter-spacing: 0.04em;
@@ -48,6 +48,7 @@
 
   fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 1rem 1.1rem 1.2rem; margin: 0 0 1.1rem; }
   legend { font-weight: 600; color: var(--gold-light); padding: 0 0.4rem; font-size: 0.9rem; }
+  .fld-hint { color: var(--muted); font-size: 0.78rem; margin: -0.4rem 0 0.85rem; }
 
   .fld-group { margin-bottom: 0.85rem; }
   .fld-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
@@ -58,13 +59,46 @@
     color: var(--text); padding: 0.6rem 0.75rem; font-family: var(--sans); font-size: 0.92rem;
   }
   input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
+  input:disabled { opacity: 0.45; }
   textarea { min-height: 70px; resize: vertical; }
 
-  .raum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; }
-  .raum-grid .fld-group { margin-bottom: 0; }
+  label.chk { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text); margin-bottom: 0.35rem; cursor: pointer; }
+  label.chk input[type=checkbox] { width: auto; accent-color: var(--gold); }
+
+  .pos-row {
+    background: var(--panel2); border: 1px solid var(--line); border-radius: 8px;
+    padding: 0.85rem 0.9rem; margin-bottom: 0.75rem;
+  }
+  .pos-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; }
+  .pos-row-head b { font-size: 0.82rem; color: var(--gold-light); }
+  .btn-entfernen {
+    background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--muted);
+    cursor: pointer; padding: 0.25rem 0.55rem; font-size: 0.85rem;
+  }
+  .btn-entfernen:hover { border-color: var(--danger); color: var(--danger); }
+  .btn-hinzufuegen {
+    background: none; border: 1.5px dashed var(--line); border-radius: 8px; color: var(--muted);
+    cursor: pointer; padding: 0.6rem; width: 100%; font-size: 0.85rem; font-family: var(--sans);
+  }
+  .btn-hinzufuegen:hover { border-color: var(--gold); color: var(--gold-light); }
+
+  .btn-check {
+    width: 100%; padding: 0.85rem 1rem; border-radius: 8px; border: 1.5px solid var(--gold);
+    cursor: pointer; background: transparent; color: var(--gold-light); font-weight: 700;
+    font-size: 0.98rem; font-family: var(--sans); margin-bottom: 0.9rem;
+  }
+  .btn-check:hover { background: rgba(200,168,75,0.1); }
+
+  .richtpreis-box {
+    display: none; background: rgba(200,168,75,0.1); border: 1px solid var(--gold);
+    border-radius: 10px; padding: 1.1rem 1.2rem; margin-bottom: 1.1rem; text-align: center;
+  }
+  .richtpreis-box .label { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.3rem; }
+  .richtpreis-box .betrag { font-family: var(--serif); font-size: 1.7rem; color: var(--gold-light); font-weight: 700; }
+  .richtpreis-box .fein { font-size: 0.76rem; color: var(--muted); margin-top: 0.5rem; }
 
   .btn-submit {
-    width: 100%; padding: 0.9rem 1rem; border-radius: 8px; border: none; cursor: pointer;
+    display: none; width: 100%; padding: 0.9rem 1rem; border-radius: 8px; border: none; cursor: pointer;
     background: var(--gold); color: #241a08; font-weight: 700; font-size: 1rem; font-family: var(--sans);
     transition: background 0.15s;
   }
@@ -98,7 +132,7 @@
   <div class="card">
     <div id="formularBereich">
       <h1 class="formtitel">Jetzt Angebot anfragen</h1>
-      <p class="intro">Füllen Sie das Formular aus — wir erstellen daraus ein individuelles Angebot und melden uns bei Ihnen.</p>
+      <p class="intro">Beschreiben Sie Ihr Fliesenprojekt — Sie erhalten sofort einen unverbindlichen Richtpreis. Erst danach senden Sie Ihre Anfrage endgültig ab.</p>
 
       <div class="status-bar" id="status"><span id="statusText"></span></div>
 
@@ -107,76 +141,100 @@
           <legend>Ihre Kontaktdaten</legend>
           <div class="fld-group">
             <label class="fld">Name *</label>
-            <input type="text" id="kundeName" required>
+            <input type="text" id="kundeName" required oninput="eingabenGeaendert()">
           </div>
           <div class="fld-row">
             <div class="fld-group">
               <label class="fld">E-Mail *</label>
-              <input type="email" id="kundeEmail" required>
+              <input type="email" id="kundeEmail" required oninput="eingabenGeaendert()">
             </div>
             <div class="fld-group">
               <label class="fld">Telefon</label>
-              <input type="tel" id="kundeTelefon">
+              <input type="tel" id="kundeTelefon" oninput="eingabenGeaendert()">
             </div>
           </div>
         </fieldset>
 
         <fieldset>
-          <legend>Räume</legend>
-          <div class="raum-grid">
-            <div class="fld-group"><label class="fld">Bad(er)</label><input type="number" id="raumBad" min="0" value="0"></div>
-            <div class="fld-group"><label class="fld">Küche(n)</label><input type="number" id="raumKueche" min="0" value="0"></div>
-            <div class="fld-group"><label class="fld">Flur(e)</label><input type="number" id="raumFlur" min="0" value="0"></div>
-            <div class="fld-group"><label class="fld">Terrasse/Balkon</label><input type="number" id="raumTerrasse" min="0" value="0"></div>
-          </div>
-          <div class="fld-group" style="margin-top:0.85rem">
-            <label class="fld">Sonstige Räume / zusätzliche Angaben</label>
-            <textarea id="raumSonstige" placeholder="z. B. Gäste-WC, Treppenhaus, besondere Wünsche …"></textarea>
-          </div>
+          <legend>Flächen & Fliesenwünsche</legend>
+          <p class="fld-hint">Fügen Sie für jeden Bereich eine eigene Zeile hinzu — z. B. Bad-Boden + Bad-Wand getrennt.</p>
+          <div id="positionenListe"></div>
+          <button type="button" class="btn-hinzufuegen" onclick="positionHinzufuegen()">➕ Weitere Fläche hinzufügen</button>
         </fieldset>
 
         <fieldset>
-          <legend>Umfang & Zustand</legend>
+          <legend>Zustand & Vorarbeiten</legend>
+          <label class="chk"><input type="checkbox" id="altbelagEntfernen" onchange="eingabenGeaendert()"> Alter Belag ist vorhanden und muss entfernt werden</label>
           <div class="fld-row">
             <div class="fld-group">
-              <label class="fld">Fläche (ca. m²)</label>
-              <input type="number" id="flaeche" min="0" step="0.5">
+              <label class="fld">Untergrund vorbereiten/ausgleichen nötig?</label>
+              <select id="untergrundVorbereiten" onchange="eingabenGeaendert()">
+                <option value="unsicher">— weiß ich nicht —</option>
+                <option value="ja">ja</option>
+                <option value="nein">nein, Untergrund ist eben</option>
+              </select>
             </div>
             <div class="fld-group">
-              <label class="fld">Verschmutzungsgrad (Altbestand)</label>
-              <select id="verschmutzung">
-                <option value="">— keine Angabe —</option>
-                <option value="gering">gering</option>
-                <option value="mittel">mittel</option>
-                <option value="stark">stark</option>
+              <label class="fld">Abdichtung nötig (Bad/Dusche/Nassbereich)?</label>
+              <select id="abdichtungNoetig" onchange="eingabenGeaendert()">
+                <option value="unsicher">— weiß ich nicht —</option>
+                <option value="ja">ja</option>
+                <option value="nein">nein</option>
               </select>
             </div>
           </div>
-          <div class="fld-group">
-            <label class="fld">Gewünschter Zeitrahmen</label>
-            <input type="text" id="zeitrahmen" placeholder="z. B. in 4 Wochen, ab August, so bald wie möglich …">
+          <div class="fld-row">
+            <div class="fld-group">
+              <label class="fld">Fußbodenheizung vorhanden?</label>
+              <select id="fussbodenheizung" onchange="eingabenGeaendert()">
+                <option value="unsicher">— weiß ich nicht —</option>
+                <option value="ja">ja</option>
+                <option value="nein">nein</option>
+              </select>
+            </div>
+            <div class="fld-group">
+              <label class="fld">Silikon-/Anschlussfugen (ca. lfm)</label>
+              <input type="number" id="fugenlaufmeter" min="0" step="0.5" oninput="eingabenGeaendert()">
+            </div>
           </div>
         </fieldset>
 
         <fieldset>
-          <legend>Adresse der Baustelle</legend>
+          <legend>Zeitrahmen & Adresse</legend>
+          <div class="fld-group">
+            <label class="fld">Gewünschter Zeitrahmen</label>
+            <input type="text" id="zeitrahmen" placeholder="z. B. in 4 Wochen, ab August, so bald wie möglich …" oninput="eingabenGeaendert()">
+          </div>
           <div class="fld-group">
             <label class="fld">Straße, Hausnummer</label>
-            <input type="text" id="adresseStrasse">
+            <input type="text" id="adresseStrasse" oninput="eingabenGeaendert()">
           </div>
           <div class="fld-row">
             <div class="fld-group">
               <label class="fld">PLZ</label>
-              <input type="text" id="adressePlz">
+              <input type="text" id="adressePlz" oninput="eingabenGeaendert()">
             </div>
             <div class="fld-group">
               <label class="fld">Ort</label>
-              <input type="text" id="adresseOrt">
+              <input type="text" id="adresseOrt" oninput="eingabenGeaendert()">
             </div>
           </div>
         </fieldset>
 
-        <button class="btn-submit" id="submitBtn" onclick="formularAbsenden()">Angebot anfragen</button>
+        <fieldset>
+          <legend>Sonstige Wünsche</legend>
+          <textarea id="notizen" placeholder="z. B. besondere Muster, Fugenfarbe, Termine, Zugänglichkeit …" oninput="eingabenGeaendert()"></textarea>
+        </fieldset>
+
+        <button type="button" class="btn-check" id="pruefenBtn" onclick="eingabenPruefen()">🔍 Eingaben prüfen &amp; Richtpreis berechnen</button>
+
+        <div class="richtpreis-box" id="richtpreisBox">
+          <div class="label">Ihr unverbindlicher Richtpreis</div>
+          <div class="betrag">ca. <span id="richtpreisVon"></span> € – <span id="richtpreisBis"></span> €</div>
+          <div class="fein">Grobe Schätzung auf Basis unserer aktuellen Preise, inkl. MwSt. Das endgültige Angebot kann je nach Vor-Ort-Begutachtung abweichen.</div>
+        </div>
+
+        <button class="btn-submit" id="submitBtn" onclick="formularAbsenden()">✅ Anfrage jetzt wirklich absenden</button>
         <p class="hinweis">Mit dem Absenden erklären Sie sich einverstanden, dass wir Ihre Angaben zur Erstellung eines Angebots nutzen. Musterformular einer Demo-Anwendung — keine echten Daten eingeben.</p>
       </form>
     </div>
@@ -231,6 +289,7 @@ function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
+const fmtEUR = n => Math.round(n).toLocaleString('de-DE');
 
 function setStatus(typ, text) {
   const bar = document.getElementById('status');
@@ -249,39 +308,185 @@ function setStatus(typ, text) {
   if (email) document.getElementById('kundeEmail').value = email;
 })();
 
-function raumTextBauen() {
-  const teile = [];
-  const bad = +document.getElementById('raumBad').value || 0;
-  const kueche = +document.getElementById('raumKueche').value || 0;
-  const flur = +document.getElementById('raumFlur').value || 0;
-  const terrasse = +document.getElementById('raumTerrasse').value || 0;
-  if (bad) teile.push(`${bad} Bad${bad > 1 ? 'er' : ''}`);
-  if (kueche) teile.push(`${kueche} Küche${kueche > 1 ? 'n' : ''}`);
-  if (flur) teile.push(`${flur} Flur${flur > 1 ? 'e' : ''}`);
-  if (terrasse) teile.push(`${terrasse}x Terrasse/Balkon`);
-  const sonstige = document.getElementById('raumSonstige').value.trim();
-  if (sonstige) teile.push(sonstige);
-  return teile.join(', ') || 'keine Angabe';
+/* =================== Stammdaten laden (für Richtpreis-Berechnung) =================== */
+let stammdaten = {};
+let materialOptionenHTML = '<option value="">— Standard (mittlere Preisklasse) —</option>';
+
+async function ladeStammdaten() {
+  try {
+    const rows = await sb('angebot_stammdaten?id=eq.1&select=daten');
+    stammdaten = (rows[0] && rows[0].daten) || {};
+    materialOptionenHTML += (stammdaten.materialpreise || [])
+      .filter(p => p.einheit === 'm²')
+      .map(p => `<option value="${esc(p.name)}">${esc(p.name)} (${p.preis} €/m²)</option>`)
+      .join('');
+  } catch (err) {
+    setStatus('error', `Preisdaten konnten nicht geladen werden — Richtpreis-Berechnung ist eingeschränkt: ${err.message}`);
+  }
+  if (!positionen.length) positionHinzufuegen();
+}
+
+/* =================== Flächen-Positionen (Bereich/Boden/Wand/Fliesentyp) =================== */
+let positionen = [];
+
+function positionHinzufuegen() {
+  positionen.push({ bereich: 'Bad', boden: true, bodenM2: 0, wand: false, wandM2: 0, fliesentyp: '' });
+  renderPositionen();
+  eingabenGeaendert();
+}
+function positionEntfernen(i) {
+  positionen.splice(i, 1);
+  renderPositionen();
+  eingabenGeaendert();
+}
+function posCheckboxAendern(el) {
+  const i = +el.dataset.i;
+  positionen[i][el.dataset.f] = el.checked;
+  renderPositionen();
+  eingabenGeaendert();
+}
+function posSelectAendern(el) {
+  positionen[+el.dataset.i][el.dataset.f] = el.value;
+  eingabenGeaendert();
+}
+function posZahlAendern(el) {
+  positionen[+el.dataset.i][el.dataset.f] = +el.value || 0;
+  eingabenGeaendert();
+}
+
+const BEREICHE = ['Bad', 'Küche', 'Flur', 'Wohn-/Schlafbereich', 'Terrasse/Balkon', 'Treppe', 'Sonstige'];
+
+function renderPositionen() {
+  const el = document.getElementById('positionenListe');
+  el.innerHTML = positionen.map((p, i) => `
+    <div class="pos-row">
+      <div class="pos-row-head">
+        <b>Fläche ${i + 1}</b>
+        ${positionen.length > 1 ? `<button type="button" class="btn-entfernen" onclick="positionEntfernen(${i})">🗑️ entfernen</button>` : ''}
+      </div>
+      <div class="fld-row">
+        <div class="fld-group" style="flex:1.3">
+          <label class="fld">Bereich</label>
+          <select data-i="${i}" data-f="bereich" onchange="posSelectAendern(this)">
+            ${BEREICHE.map(b => `<option value="${b}" ${p.bereich === b ? 'selected' : ''}>${b}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fld-group" style="flex:1.3">
+          <label class="fld">Fliesentyp</label>
+          <select data-i="${i}" data-f="fliesentyp" onchange="posSelectAendern(this)">
+            ${materialOptionenHTML.replace(`value="${esc(p.fliesentyp)}"`, `value="${esc(p.fliesentyp)}" selected`)}
+          </select>
+        </div>
+      </div>
+      <div class="fld-row">
+        <div class="fld-group">
+          <label class="chk"><input type="checkbox" data-i="${i}" data-f="boden" ${p.boden ? 'checked' : ''} onchange="posCheckboxAendern(this)"> Boden</label>
+          <input type="number" min="0" step="0.5" placeholder="m²" data-i="${i}" data-f="bodenM2" value="${p.bodenM2 || ''}" oninput="posZahlAendern(this)" ${p.boden ? '' : 'disabled'}>
+        </div>
+        <div class="fld-group">
+          <label class="chk"><input type="checkbox" data-i="${i}" data-f="wand" ${p.wand ? 'checked' : ''} onchange="posCheckboxAendern(this)"> Wand</label>
+          <input type="number" min="0" step="0.5" placeholder="m²" data-i="${i}" data-f="wandM2" value="${p.wandM2 || ''}" oninput="posZahlAendern(this)" ${p.wand ? '' : 'disabled'}>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+/* =================== Richtpreis-Berechnung aus den echten Stammdaten =================== */
+function materialDurchschnitt() {
+  const mats = (stammdaten.materialpreise || []).filter(p => p.einheit === 'm²');
+  if (!mats.length) return 20;
+  return mats.reduce((s, p) => s + p.preis, 0) / mats.length;
+}
+function materialpreisFuer(name) {
+  if (!name) return materialDurchschnitt();
+  const m = (stammdaten.materialpreise || []).find(p => p.name === name);
+  return m ? m.preis : materialDurchschnitt();
+}
+function leistung(name) {
+  const l = (stammdaten.leistungspreise || []).find(p => p.name === name);
+  return l ? l.preis : 0;
+}
+
+function berechneUeberschlag() {
+  let netto = 0, bodenFlaecheGesamt = 0, badFlaecheGesamt = 0;
+  positionen.forEach(p => {
+    const material = materialpreisFuer(p.fliesentyp);
+    if (p.boden && p.bodenM2 > 0) {
+      bodenFlaecheGesamt += p.bodenM2;
+      if (p.bereich === 'Terrasse/Balkon') {
+        netto += p.bodenM2 * (leistung('Terrassenplatten verlegen') + leistung('Terrassenuntergrund herstellen') + material);
+      } else {
+        netto += p.bodenM2 * (leistung('Bodenfliesen verlegen') + material);
+      }
+      if (p.bereich === 'Bad') badFlaecheGesamt += p.bodenM2;
+    }
+    if (p.wand && p.wandM2 > 0) {
+      netto += p.wandM2 * (leistung('Wandfliesen verlegen') + material);
+      if (p.bereich === 'Bad') badFlaecheGesamt += p.wandM2;
+    }
+  });
+  if (document.getElementById('altbelagEntfernen').checked) netto += bodenFlaecheGesamt * leistung('Alten Belag abbrechen/entsorgen');
+  if (document.getElementById('untergrundVorbereiten').value === 'ja') netto += bodenFlaecheGesamt * leistung('Untergrund vorbereiten');
+  if (document.getElementById('abdichtungNoetig').value === 'ja') netto += badFlaecheGesamt * leistung('Verbundabdichtung');
+  const fugenLfm = +document.getElementById('fugenlaufmeter').value || 0;
+  if (fugenLfm > 0) netto += fugenLfm * leistung('Silikon-Anschlussfugen');
+  netto += stammdaten.anfahrtspauschale || 0;
+  const mwstSatz = stammdaten.mwst != null ? stammdaten.mwst : 19;
+  const brutto = netto * (1 + mwstSatz / 100);
+  return { netto, brutto, mwstSatz };
+}
+
+/* Nach jeder relevanten Eingabe wird ein zuvor angezeigter Richtpreis wieder
+   ausgeblendet — der Kunde muss nach Änderungen erneut prüfen, bevor er absenden kann. */
+function eingabenGeaendert() {
+  document.getElementById('richtpreisBox').style.display = 'none';
+  document.getElementById('submitBtn').style.display = 'none';
+}
+
+function eingabenPruefen() {
+  const kundeName = document.getElementById('kundeName').value.trim();
+  const kundeEmail = document.getElementById('kundeEmail').value.trim();
+  if (!kundeName || !kundeEmail) { setStatus('error', 'Bitte zuerst Name und E-Mail-Adresse angeben.'); return; }
+  const hatFlaeche = positionen.some(p => (p.boden && p.bodenM2 > 0) || (p.wand && p.wandM2 > 0));
+  if (!hatFlaeche) { setStatus('error', 'Bitte mindestens eine Fläche (Boden oder Wand) mit m²-Angabe eintragen.'); return; }
+  setStatus('');
+
+  const { brutto } = berechneUeberschlag();
+  const von = Math.max(0, Math.floor(brutto * 0.85 / 50) * 50);
+  const bis = Math.ceil(brutto * 1.2 / 50) * 50;
+  document.getElementById('richtpreisVon').textContent = fmtEUR(von);
+  document.getElementById('richtpreisBis').textContent = fmtEUR(bis);
+  document.getElementById('richtpreisBox').style.display = 'block';
+  document.getElementById('submitBtn').style.display = 'block';
+  window._letzterRichtpreis = { von, bis };
+  document.getElementById('richtpreisBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+/* =================== Absenden =================== */
+function positionenTextBauen() {
+  return positionen.map((p, i) => {
+    const teile = [];
+    if (p.boden && p.bodenM2 > 0) teile.push(`Boden ${p.bodenM2} m²`);
+    if (p.wand && p.wandM2 > 0) teile.push(`Wand ${p.wandM2} m²`);
+    if (!teile.length) return null;
+    return `${p.bereich}: ${teile.join(', ')}${p.fliesentyp ? ', Fliesentyp: ' + p.fliesentyp : ''}`;
+  }).filter(Boolean).join(' | ');
 }
 
 async function formularAbsenden() {
   const kundeName = document.getElementById('kundeName').value.trim();
   const kundeEmail = document.getElementById('kundeEmail').value.trim();
-  if (!kundeName || !kundeEmail) {
-    setStatus('error', 'Bitte Name und E-Mail-Adresse angeben.');
-    return;
-  }
+  if (!kundeName || !kundeEmail) { setStatus('error', 'Bitte Name und E-Mail-Adresse angeben.'); return; }
 
   const antworten = {
-    raeume: {
-      bad: +document.getElementById('raumBad').value || 0,
-      kueche: +document.getElementById('raumKueche').value || 0,
-      flur: +document.getElementById('raumFlur').value || 0,
-      terrasse: +document.getElementById('raumTerrasse').value || 0,
-      sonstige: document.getElementById('raumSonstige').value.trim(),
+    positionen: positionen.filter(p => (p.boden && p.bodenM2 > 0) || (p.wand && p.wandM2 > 0)),
+    zustand: {
+      altbelag_entfernen: document.getElementById('altbelagEntfernen').checked,
+      untergrund_vorbereiten: document.getElementById('untergrundVorbereiten').value,
+      abdichtung_noetig: document.getElementById('abdichtungNoetig').value,
+      fussbodenheizung: document.getElementById('fussbodenheizung').value,
+      fugenlaufmeter: +document.getElementById('fugenlaufmeter').value || 0,
     },
-    flaeche_m2: document.getElementById('flaeche').value || null,
-    verschmutzungsgrad: document.getElementById('verschmutzung').value || null,
     zeitrahmen: document.getElementById('zeitrahmen').value.trim() || null,
     adresse: {
       strasse: document.getElementById('adresseStrasse').value.trim(),
@@ -289,6 +494,8 @@ async function formularAbsenden() {
       ort: document.getElementById('adresseOrt').value.trim(),
     },
     telefon: document.getElementById('kundeTelefon').value.trim() || null,
+    notizen: document.getElementById('notizen').value.trim() || null,
+    richtpreis: window._letzterRichtpreis || null,
   };
 
   const btn = document.getElementById('submitBtn');
@@ -307,12 +514,17 @@ async function formularAbsenden() {
     // 2) Anfrage-Text zusammenbauen — gleicher Stil wie eine manuell eingegebene Kundenanfrage.
     const adresseText = [antworten.adresse.strasse, [antworten.adresse.plz, antworten.adresse.ort].filter(Boolean).join(' ')]
       .filter(Boolean).join(', ');
+    const z = antworten.zustand;
     const anfrage = `Kunde ${kundeName} (${kundeEmail}${antworten.telefon ? ', Tel. ' + antworten.telefon : ''}) bittet um ein Angebot für Fliesenlegerarbeiten.
-Räume: ${raumTextBauen()}.
-Fläche: ${antworten.flaeche_m2 ? antworten.flaeche_m2 + ' m²' : 'keine Angabe'}.
-Verschmutzungsgrad Altbestand: ${antworten.verschmutzungsgrad || 'keine Angabe'}.
+Flächen: ${positionenTextBauen() || 'keine Angabe'}.
+Alter Belag muss entfernt werden: ${z.altbelag_entfernen ? 'ja' : 'nein'}.
+Untergrund vorbereiten/ausgleichen nötig: ${z.untergrund_vorbereiten}.
+Abdichtung nötig (Nassbereich): ${z.abdichtung_noetig}.
+Fußbodenheizung vorhanden: ${z.fussbodenheizung}.
+Silikon-/Anschlussfugen: ${z.fugenlaufmeter ? z.fugenlaufmeter + ' lfm' : 'keine Angabe'}.
 Gewünschter Zeitrahmen: ${antworten.zeitrahmen || 'keine Angabe'}.
-Adresse der Baustelle: ${adresseText || 'keine Angabe'}.`;
+Adresse der Baustelle: ${adresseText || 'keine Angabe'}.
+${antworten.notizen ? 'Sonstige Wünsche: ' + antworten.notizen + '.' : ''}`;
 
     // 3) Angebot generieren — bestehende Function, unverändert.
     const res = await fetch('/api/angebot', {
@@ -347,9 +559,11 @@ Adresse der Baustelle: ${adresseText || 'keine Angabe'}.`;
       } catch { /* Statusupdate ist best-effort, Hauptfehler wird unten gezeigt */ }
     }
     setStatus('error', `Leider ist etwas schiefgelaufen: ${err.message}. Ihre Angaben sind gespeichert — bitte versuchen Sie es später erneut oder kontaktieren Sie uns direkt.`);
-    btn.disabled = false; btn.textContent = 'Angebot anfragen';
+    btn.disabled = false; btn.textContent = '✅ Anfrage jetzt wirklich absenden';
   }
 }
+
+ladeStammdaten();
 </script>
 </body>
 </html>
