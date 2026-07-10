@@ -1070,8 +1070,22 @@ function startRec() {
     if (final) basis = (basis ? basis + ' ' : '') + final.trim();
     ta.value = basis + (interim ? ' ' + interim : '');
   };
-  recog.onerror = e => { setStatus('error', `Spracherkennung: ${e.error}`); stopRec(); };
-  recog.onend = () => { if (recording) recog.start(); }; // Auto-Restart bei Pause
+  recog.onerror = e => {
+    // "no-speech"/"aborted" treten bei jeder kurzen Sprechpause auf und sind kein echter
+    // Abbruch — onend startet danach automatisch neu. Nur bei echten Problemen stoppen.
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') {
+      setStatus('error', `Spracherkennung: ${e.error}`);
+      stopRec();
+    }
+  };
+  recog.onend = () => {
+    // Auto-Restart bei Pause/Chrome-Zeitlimit (~60s) — start() kann werfen, wenn der
+    // Browser die vorige Session noch nicht freigegeben hat; ohne try/catch stirbt die
+    // Aufnahme sonst lautlos ohne jeden Hinweis.
+    if (!recording) return;
+    try { recog.start(); }
+    catch (err) { setStatus('error', `Spracherkennung konnte nicht fortgesetzt werden: ${err.message}`); stopRec(); }
+  };
   recog.start();
   recording = true; micBtn.classList.add('recording');
   setStatus('loading', '🎤 Aufnahme läuft — sprechen Sie die Anfrage. Zum Beenden erneut aufs Mikrofon klicken.');
